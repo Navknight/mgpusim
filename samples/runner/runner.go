@@ -55,6 +55,8 @@ type Runner struct {
 	ReportSIMDBusyTime         bool
 	ReportCPIStack             bool
 
+	usePrefetcher bool
+
 	GPUIDs []int
 }
 
@@ -106,8 +108,13 @@ func (r *Runner) buildEmuPlatform() {
 }
 
 func (r *Runner) buildTimingPlatform() {
-	b := MakeR9NanoBuilder().
-		WithNumGPU(r.GPUIDs[len(r.GPUIDs)-1])
+	b := MakeR9NanoBuilder()
+
+	if r.usePrefetcher {
+		b = b.WithPrefetcher()
+	}
+
+	b = b.WithNumGPU(r.GPUIDs[len(r.GPUIDs)-1])
 
 	if r.Parallel {
 		b = b.WithParallelEngine()

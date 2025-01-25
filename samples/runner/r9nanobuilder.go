@@ -78,6 +78,8 @@ type R9NanoGPUBuilder struct {
 	l1TLBToL2TLBConnection *sim.DirectConnection
 	l1ToL2Connection       *sim.DirectConnection
 	l2ToDramConnection     *sim.DirectConnection
+
+	usePrefetcher bool
 }
 
 // MakeR9NanoGPUBuilder provides a GPU builder that can builds the R9Nano GPU.
@@ -222,6 +224,11 @@ func (b R9NanoGPUBuilder) WithGlobalStorage(
 	storage *mem.Storage,
 ) R9NanoGPUBuilder {
 	b.globalStorage = storage
+	return b
+}
+
+func (b R9NanoGPUBuilder) WithPrefetcher() R9NanoGPUBuilder {
+	b.usePrefetcher = true
 	return b
 }
 
@@ -489,6 +496,10 @@ func (b *R9NanoGPUBuilder) buildSAs() {
 		withLog2CachelineSize(b.log2CacheLineSize).
 		withLog2PageSize(b.log2PageSize).
 		withNumCU(b.numCUPerShaderArray)
+
+	if b.usePrefetcher {
+		saBuilder = saBuilder.withPrefetcher()
+	}
 
 	if b.enableISADebugging {
 		saBuilder = saBuilder.withIsaDebugging()

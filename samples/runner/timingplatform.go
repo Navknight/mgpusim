@@ -41,6 +41,8 @@ type R9NanoPlatformBuilder struct {
 	globalStorage *mem.Storage
 
 	gpus []*GPU
+
+	usePrefetcher bool
 }
 
 // MakeR9NanoBuilder creates a EmuBuilder with default parameters.
@@ -129,6 +131,11 @@ func (b R9NanoPlatformBuilder) WithPerfAnalyzer(
 // WithMagicMemoryCopy uses global storage as memory components
 func (b R9NanoPlatformBuilder) WithMagicMemoryCopy() R9NanoPlatformBuilder {
 	b.useMagicMemoryCopy = true
+	return b
+}
+
+func (b R9NanoPlatformBuilder) WithPrefetcher() R9NanoPlatformBuilder {
+	b.usePrefetcher = true
 	return b
 }
 
@@ -417,9 +424,14 @@ func (b *R9NanoPlatformBuilder) createGPU(
 ) *GPU {
 	name := fmt.Sprintf("GPU[%d]", index)
 	memAddrOffset := uint64(index) * 4 * mem.GB
-	gpu := gpuBuilder.
-		WithMemAddrOffset(memAddrOffset).
-		Build(name, uint64(index))
+
+	gpuBuilder = gpuBuilder.WithMemAddrOffset(memAddrOffset)
+
+	if b.usePrefetcher {
+		gpuBuilder = gpuBuilder.WithPrefetcher()
+	}
+
+	gpu := gpuBuilder.Build(name, uint64(index))
 	gpuDriver.RegisterGPU(
 		gpu.Domain.GetPortByName("CommandProcessor"),
 		driver.DeviceProperties{
