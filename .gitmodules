@@ -1,0 +1,3 @@
+[submodule "akita"]
+	path = akita
+	url = https://github.com/Navknight/akita
