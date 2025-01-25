@@ -26,27 +26,33 @@ type verificationPreEnablingBenchmark interface {
 
 // Runner is a class that helps running the benchmarks in the official samples.
 type Runner struct {
-	platform                *Platform
-	maxInstStopper          *instTracer
-	kernelTimeCounter       *tracing.BusyTimeTracer
-	perGPUKernelTimeCounter []*tracing.BusyTimeTracer
-	instCountTracers        []instCountTracer
-	cacheLatencyTracers     []cacheLatencyTracer
-	cacheHitRateTracers     []cacheHitRateTracer
-	tlbHitRateTracers       []tlbHitRateTracer
-	rdmaTransactionCounters []rdmaTransactionCountTracer
-	dramTracers             []dramTransactionCountTracer
-	benchmarks              []benchmarks.Benchmark
-	monitor                 *monitoring.Monitor
-	metricsCollector        *collector
-	simdBusyTimeTracers     []simdBusyTimeTracer
-	cuCPITraces             []cuCPIStackTracer
+	platform                    *Platform
+	maxInstStopper              *instTracer
+	kernelTimeCounter           *tracing.BusyTimeTracer
+	perGPUKernelTimeCounter     []*tracing.BusyTimeTracer
+	instCountTracers            []instCountTracer
+	cacheLatencyTracers         []cacheLatencyTracer
+	prefetchCacheLatencyTracers []prefetchCacheLatencyTracer
+	remoteCacheLatencyTracers   []remoteCacheLatencyTracer
+	localCacheLatencyTracers    []localCacheLatencyTracer
+	cacheHitRateTracers         []cacheHitRateTracer
+	tlbHitRateTracers           []tlbHitRateTracer
+	rdmaTransactionCounters     []rdmaTransactionCountTracer
+	dramTracers                 []dramTransactionCountTracer
+	benchmarks                  []benchmarks.Benchmark
+	monitor                     *monitoring.Monitor
+	metricsCollector            *collector
+	simdBusyTimeTracers         []simdBusyTimeTracer
+	cuCPITraces                 []cuCPIStackTracer
 
 	Timing                     bool
 	Verify                     bool
 	Parallel                   bool
 	ReportInstCount            bool
 	ReportCacheLatency         bool
+	ReportPrefetchCacheLatency bool
+	ReportRemoteCacheLatency   bool
+	ReportLocalCacheLatency    bool
 	ReportCacheHitRate         bool
 	ReportTLBHitRate           bool
 	ReportRDMATransactionCount bool

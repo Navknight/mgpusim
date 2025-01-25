@@ -4,6 +4,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/sarchlab/akita/v3/mem/mem"
 	"github.com/sarchlab/akita/v3/sim"
 	"github.com/sarchlab/akita/v3/tracing"
 	"github.com/sarchlab/mgpusim/v3/timing/cu"
@@ -17,6 +18,21 @@ type instCountTracer struct {
 }
 
 type cacheLatencyTracer struct {
+	tracer *tracing.AverageTimeTracer
+	cache  TraceableComponent
+}
+
+type prefetchCacheLatencyTracer struct {
+	tracer *tracing.AverageTimeTracer
+	cache  TraceableComponent
+}
+
+type localCacheLatencyTracer struct {
+	tracer *tracing.AverageTimeTracer
+	cache  TraceableComponent
+}
+
+type remoteCacheLatencyTracer struct {
 	tracer *tracing.AverageTimeTracer
 	cache  TraceableComponent
 }
@@ -64,6 +80,10 @@ func (r *Runner) defineMetrics() {
 	r.addRDMAEngineTracer()
 	r.addDRAMTracer()
 	r.addSIMDBusyTimeTracer()
+
+	r.addPrefetchCacheLatencyTracer()
+	r.addLocalCacheLatencyTracer()
+	r.addRemoteCacheLatencyTracer()
 
 	atexit.Register(func() { r.reportStats() })
 }
@@ -182,6 +202,67 @@ func (r *Runner) addCacheLatencyTracer() {
 				})
 			r.cacheLatencyTracers = append(r.cacheLatencyTracers,
 				cacheLatencyTracer{tracer: tracer, cache: cache})
+			tracing.CollectTrace(cache, tracer)
+		}
+	}
+}
+
+func (r *Runner) addPrefetchCacheLatencyTracer() {
+	if !r.ReportPrefetchCacheLatency {
+		return
+	}
+
+	for _, gpu := range r.platform.GPUs {
+		for _, cache := range gpu.L1VCaches {
+			tracer := tracing.NewAverageTimeTracer(r.platform.Engine,
+				func(task tracing.Task) bool {
+					if req, ok := task.Detail.(*mem.ReadReq); ok {
+						return req.FromPrefetcher
+					}
+					return false
+				})
+			r.prefetchCacheLatencyTracers = append(r.prefetchCacheLatencyTracers,
+				prefetchCacheLatencyTracer{tracer: tracer, cache: cache})
+			tracing.CollectTrace(cache, tracer)
+		}
+	}
+}
+
+func (r *Runner) addRemoteCacheLatencyTracer() {
+	if !r.ReportRemoteCacheLatency {
+		return
+	}
+	for _, gpu := range r.platform.GPUs {
+		for _, cache := range gpu.L1VCaches {
+			tracer := tracing.NewAverageTimeTracer(r.platform.Engine,
+				func(task tracing.Task) bool {
+					if req, ok := task.Detail.(*mem.ReadReq); ok {
+						return strings.Contains(req.Dst.Name(), "RDMA")
+					}
+					return false
+				})
+			r.remoteCacheLatencyTracers = append(r.remoteCacheLatencyTracers,
+				remoteCacheLatencyTracer{tracer: tracer, cache: cache})
+			tracing.CollectTrace(cache, tracer)
+		}
+	}
+}
+
+func (r *Runner) addLocalCacheLatencyTracer() {
+	if !r.ReportLocalCacheLatency {
+		return
+	}
+	for _, gpu := range r.platform.GPUs {
+		for _, cache := range gpu.L1VCaches {
+			tracer := tracing.NewAverageTimeTracer(r.platform.Engine,
+				func(task tracing.Task) bool {
+					if req, ok := task.Detail.(*mem.ReadReq); ok {
+						return !strings.Contains(req.Dst.Name(), "RDMA")
+					}
+					return false
+				})
+			r.localCacheLatencyTracers = append(r.localCacheLatencyTracers,
+				localCacheLatencyTracer{tracer: tracer, cache: cache})
 			tracing.CollectTrace(cache, tracer)
 		}
 	}
@@ -363,6 +444,9 @@ func (r *Runner) reportStats() {
 	r.reportCPIStack()
 	r.reportSIMDBusyTime()
 	r.reportCacheLatency()
+	r.reportPrefetchCacheLatency()
+	r.reportLocalCacheLatency()
+	r.reportRemoteCacheLatency()
 	r.reportCacheHitRate()
 	r.reportTLBHitRate()
 	r.reportRDMATransactionCount()
@@ -460,6 +544,48 @@ func (r *Runner) reportCacheLatency() {
 		r.metricsCollector.Collect(
 			tracer.cache.Name(),
 			"req_average_latency",
+			float64(tracer.tracer.AverageTime()),
+		)
+	}
+}
+
+func (r *Runner) reportPrefetchCacheLatency() {
+	for _, tracer := range r.prefetchCacheLatencyTracers {
+		if tracer.tracer.AverageTime() == 0 {
+			continue
+		}
+
+		r.metricsCollector.Collect(
+			tracer.cache.Name(),
+			"prefetch_average_latency",
+			float64(tracer.tracer.AverageTime()),
+		)
+	}
+}
+
+func (r *Runner) reportLocalCacheLatency() {
+	for _, tracer := range r.localCacheLatencyTracers {
+		if tracer.tracer.AverageTime() == 0 {
+			continue
+		}
+
+		r.metricsCollector.Collect(
+			tracer.cache.Name(),
+			"local_average_latency",
+			float64(tracer.tracer.AverageTime()),
+		)
+	}
+}
+
+func (r *Runner) reportRemoteCacheLatency() {
+	for _, tracer := range r.remoteCacheLatencyTracers {
+		if tracer.tracer.AverageTime() == 0 {
+			continue
+		}
+
+		r.metricsCollector.Collect(
+			tracer.cache.Name(),
+			"remote_average_latency",
 			float64(tracer.tracer.AverageTime()),
 		)
 	}

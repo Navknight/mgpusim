@@ -131,6 +131,9 @@ func (r *Runner) ParseFlag() *Runner {
 	if *reportAll {
 		r.ReportInstCount = true
 		r.ReportCacheLatency = true
+		r.ReportPrefetchCacheLatency = true
+		r.ReportLocalCacheLatency = true
+		r.ReportRemoteCacheLatency = true
 		r.ReportCacheHitRate = true
 		r.ReportTLBHitRate = true
 		r.ReportSIMDBusyTime = true
