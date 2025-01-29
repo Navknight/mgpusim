@@ -600,11 +600,21 @@ func (r *Runner) reportCacheHitRate() {
 		writeMiss := tracer.tracer.GetStepCount("write-miss")
 		writeMSHRHit := tracer.tracer.GetStepCount("write-mshr-hit")
 
+		prefetchHit := tracer.tracer.GetStepCount("prefetch-hit")
+		prefetchMiss := tracer.tracer.GetStepCount("prefetch-miss")
+
 		totalTransaction := readHit + readMiss + readMSHRHit +
 			writeHit + writeMiss + writeMSHRHit
 
 		if totalTransaction == 0 {
 			continue
+		}
+
+		if strings.Contains(tracer.cache.Name(), "L1VCache") {
+			r.metricsCollector.Collect(
+				tracer.cache.Name(), "prefetch-hit", float64(prefetchHit))
+			r.metricsCollector.Collect(
+				tracer.cache.Name(), "prefetch-miss", float64(prefetchMiss))
 		}
 
 		r.metricsCollector.Collect(
