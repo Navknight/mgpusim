@@ -20,12 +20,12 @@ benchmarks=(
     "bitonicsort"
     "fir"
     "floydwarshall"
-#    "kmeans"
+   "kmeans"
     "matrixmultiplication"
     "matrixtranspose"
     "simpleconvolution"
-#    "spmv"
-#    "stencil2d"
+   "spmv"
+   "stencil2d"
 )
 
 # Source directory

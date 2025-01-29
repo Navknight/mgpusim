@@ -3,16 +3,16 @@
 # Configuration arrays
 configs=("normal" "prefetcher")
 benchmarks=(
-#     "pagerank"
-#    "bitonicsort"
+    "pagerank"
+   "bitonicsort"
    "fir"
-#    "floydwarshall"
-#    "kmeans"
-#     "matrixmultiplication"
-#    "matrixtranspose"
-#     "simpleconvolution"
-#    "spmv"
-#    "stencil2d"
+   "floydwarshall"
+   "kmeans"
+    "matrixmultiplication"
+   "matrixtranspose"
+    "simpleconvolution"
+   "spmv"
+   "stencil2d"
 )
 
 # Associative arrays to track benchmark status for each config

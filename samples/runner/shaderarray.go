@@ -363,8 +363,11 @@ func (b *shaderArrayBuilder) buildL1VCaches(sa *shaderArray) {
 		WithLog2BlockSize(b.log2CacheLineSize).
 		WithWayAssociativity(4).
 		WithNumMSHREntry(16).
-		WithTotalByteSize(16 * mem.KB).
-		WithPrefetcher()
+		WithTotalByteSize(16 * mem.KB)
+
+	if b.usePrefetcher {
+		builder = builder.WithPrefetcher()
+	}
 
 	if b.visTracer != nil {
 		builder = builder.WithVisTracer(b.visTracer)
