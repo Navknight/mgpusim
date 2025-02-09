@@ -42,6 +42,11 @@ type cacheHitRateTracer struct {
 	cache  TraceableComponent
 }
 
+type cacheAddrsTracers struct {
+	tracer *countCacheWithAddrsTracer
+	caches []TraceableComponent
+}
+
 type tlbHitRateTracer struct {
 	tracer *tracing.StepCountTracer
 	tlb    TraceableComponent
@@ -80,12 +85,27 @@ func (r *Runner) defineMetrics() {
 	r.addRDMAEngineTracer()
 	r.addDRAMTracer()
 	r.addSIMDBusyTimeTracer()
+	r.addCacheAddressTracer()
 
 	r.addPrefetchCacheLatencyTracer()
 	r.addLocalCacheLatencyTracer()
 	r.addRemoteCacheLatencyTracer()
 
 	atexit.Register(func() { r.reportStats() })
+}
+
+func (r *Runner) addCacheAddressTracer() {
+	for _, gpu := range r.platform.GPUs {
+		for _, cache := range gpu.L1VCaches {
+			tracer := cacheAddrsTracers{
+				tracer: newCountCacheWithAddrsTracer(gpu.L1VCaches),
+				caches: gpu.L1VCaches,
+			}
+			r.cacheAddrsTracers = append(r.cacheAddrsTracers, tracer)
+
+			tracing.CollectTrace(cache, tracer.tracer)
+		}
+	}
 }
 
 func (r *Runner) addKernelTimeTracer() {
@@ -452,8 +472,30 @@ func (r *Runner) reportStats() {
 	r.reportRDMATransactionCount()
 	r.reportDRAMTransactionCount()
 	r.dumpMetrics()
+	r.reportCacheAddressSharing()
 }
+func (r *Runner) reportCacheAddressSharing() {
+	for _, t := range r.cacheAddrsTracers {
+		bottomRead, sharedInSA, sharedAcrossSA := t.tracer.GetStats()
 
+		r.metricsCollector.Collect(
+			t.caches[0].Name(),
+			"l1v_cache_shared_in_sa",
+			float64(sharedInSA),
+		)
+
+		r.metricsCollector.Collect(
+			t.caches[0].Name(),
+			"l1v_cache_shared_across_sa",
+			float64(sharedAcrossSA),
+		)
+		r.metricsCollector.Collect(
+			t.caches[0].Name(),
+			"l1v_cache_bottom_read",
+			float64(bottomRead),
+		)
+	}
+}
 func (r *Runner) reportInstCount() {
 	kernelTime := float64(r.kernelTimeCounter.BusyTime())
 	for _, t := range r.instCountTracers {

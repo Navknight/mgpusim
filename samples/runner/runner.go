@@ -44,6 +44,7 @@ type Runner struct {
 	metricsCollector            *collector
 	simdBusyTimeTracers         []simdBusyTimeTracer
 	cuCPITraces                 []cuCPIStackTracer
+	cacheAddrsTracers           []cacheAddrsTracers
 
 	Timing                     bool
 	Verify                     bool
