@@ -64,6 +64,9 @@ type Runner struct {
 	usePrefetcher bool
 
 	GPUIDs []int
+
+	ReportBlockAccess    bool
+	blockAccessCollector *blockAccessTraceCollector
 }
 
 // Init initializes the platform simulate

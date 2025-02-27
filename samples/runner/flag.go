@@ -71,6 +71,7 @@ var visTraceEndTime = flag.Float64("trace-vis-end", -1,
 	"The end time of collecting visualization traces. A negative number"+
 		"means that the trace will be collected to the end of the simulation.")
 var usePrefetcher = flag.Bool("usePrefetcher", true, "to use the prefetcher")
+var reportBlockAccess = flag.Bool("report-block-access", false, "to report block access")
 
 // ParseFlag applies the runner flag to runner object
 //
@@ -128,6 +129,10 @@ func (r *Runner) ParseFlag() *Runner {
 		r.usePrefetcher = true
 	}
 
+	if *reportBlockAccess {
+		r.ReportBlockAccess = true
+	}
+
 	if *reportAll {
 		r.ReportInstCount = true
 		r.ReportCacheLatency = true
@@ -140,6 +145,7 @@ func (r *Runner) ParseFlag() *Runner {
 		r.ReportDRAMTransactionCount = true
 		r.ReportRDMATransactionCount = true
 		r.ReportCPIStack = true
+		r.ReportBlockAccess = true
 	}
 
 	return r

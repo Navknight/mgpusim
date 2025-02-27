@@ -1,6 +1,8 @@
 package runner
 
 import (
+	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -84,7 +86,9 @@ func (r *Runner) defineMetrics() {
 	r.addPrefetchCacheLatencyTracer()
 	r.addLocalCacheLatencyTracer()
 	r.addRemoteCacheLatencyTracer()
-
+	if r.ReportBlockAccess {
+		r.blockAccessCollector = newBlockAccessTraceCollector()
+	}
 	atexit.Register(func() { r.reportStats() })
 }
 
@@ -452,6 +456,23 @@ func (r *Runner) reportStats() {
 	r.reportRDMATransactionCount()
 	r.reportDRAMTransactionCount()
 	r.dumpMetrics()
+	if r.ReportBlockAccess {
+		for i, gpu := range r.platform.GPUs {
+			for _, l2Cache := range gpu.L2Caches {
+				if provider, ok := l2Cache.(blockAccessTraceProvider); ok {
+					r.blockAccessCollector.Collect(provider,
+						fmt.Sprintf("GPU%d/L2", i))
+				} else {
+					panic("collect not called")
+				}
+			}
+		}
+
+		// Use the correct directory path according to how the metrics collector works
+		// For example, if you have a base reporting directory
+		reportDir := "."
+		r.blockAccessCollector.Dump(filepath.Join(reportDir, "block_access"))
+	}
 }
 
 func (r *Runner) reportInstCount() {
