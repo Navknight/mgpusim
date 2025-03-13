@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/sarchlab/akita/v3/tracing"
 	"github.com/sarchlab/mgpusim/v3/timing/cu"
 	"github.com/sarchlab/mgpusim/v3/timing/rdma"
+	"github.com/sarchlab/akita/v3/mem/cache/writeback"
 	"github.com/tebeka/atexit"
 )
 
@@ -223,6 +225,9 @@ func (r *Runner) addCacheHitRateTracer() {
 			r.cacheHitRateTracers = append(r.cacheHitRateTracers,
 				cacheHitRateTracer{tracer: tracer, cache: cache})
 			tracing.CollectTrace(cache, tracer)
+			if l2Cache, ok := cache.(*writeback.Cache); ok {
+				fmt.Println(l2Cache.GetBlockAccessStats())
+			}
 		}
 	}
 }

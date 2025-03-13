@@ -15,13 +15,19 @@ var numIterations = flag.Int("iter", 0,
 func main() {
 	flag.Parse()
 
-	runner := new(runner.Runner).ParseFlag().Init()
-
-	benchmark := floydwarshall.NewBenchmark(runner.Driver())
+	r := new(runner.Runner).ParseFlag().Init()
+	
+	// Enable cache hit rate reporting
+	r.ReportCacheHitRate = true
+	
+	benchmark := floydwarshall.NewBenchmark(r.Driver())
 	benchmark.NumNodes = uint32(*numNodes)
 	benchmark.NumIterations = uint32(*numIterations)
 
-	runner.AddBenchmark(benchmark)
+	r.AddBenchmark(benchmark)
 
-	runner.Run()
+	r.Run()
+	
+	// The built-in cache statistics will be automatically collected and reported
+	// by the runner's reporting system via the metricsCollector
 }
