@@ -503,6 +503,13 @@ func (r *Runner) reportCacheHitRate() {
 				fmt.Println(l2Cache.GetBlockAccessStats())
 			}
 		}
+		fmt.Println("infinite cache stats")
+
+		for _, cache := range gpu.L2Caches {
+			if l2cache, ok := cache.(*writeback.Cache); ok {
+				fmt.Println(l2cache.GetInfiniteCacheStats())
+			}
+		}
 	}
 }
 

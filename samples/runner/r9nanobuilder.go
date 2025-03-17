@@ -854,15 +854,3 @@ func (b *R9NanoGPUBuilder) connectWithDirectConnection(
 	conn.PlugIn(port1, bufferSize)
 	conn.PlugIn(port2, bufferSize)
 }
-
-// CollectL2CacheStats gathers access statistics from all L2 caches
-func (b *R9NanoGPUBuilder) CollectL2CacheStats() map[string]map[string]interface{} {
-	stats := make(map[string]map[string]interface{})
-
-	for i, l2 := range b.l2Caches {
-		cacheName := fmt.Sprintf("L2Cache[%d]", i)
-		stats[cacheName] = l2.GetBlockAccessStats()
-	}
-
-	return stats
-}

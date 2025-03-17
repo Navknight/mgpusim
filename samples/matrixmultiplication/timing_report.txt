@@ -1,0 +1,44 @@
+Monitoring simulation with http://localhost:41323
+
+real	0m19.030s
+user	0m21.292s
+sys	0m0.446s
+Monitoring simulation with http://localhost:38669
+2025/03/17 15:12:31 /home/abhinav/mgpusim/driver/driver.go:117: Panic: runtime error: invalid memory address or nil pointer dereference
+goroutine 61 [running]:
+runtime/debug.Stack()
+	/home/abhinav/Packages/go/src/runtime/debug/stack.go:26 +0x5e
+runtime/debug.PrintStack()
+	/home/abhinav/Packages/go/src/runtime/debug/stack.go:18 +0x13
+github.com/sarchlab/mgpusim/v3/driver.(*Driver).runEngine.func1()
+	/home/abhinav/mgpusim/driver/driver.go:118 +0x9f
+panic({0x9b67a0?, 0xf3c1f0?})
+	/home/abhinav/Packages/go/src/runtime/panic.go:785 +0x132
+github.com/sarchlab/akita/v3/tracing.MsgIDAtReceiver({0x0?, 0x0?}, {0xc49940, 0xc001c04540})
+	/home/abhinav/mgpusim/akita/tracing/api.go:157 +0x2c
+github.com/sarchlab/akita/v3/mem/cache/writeback.(*writeBufferStage).fetchFromBottom(0xc002905a40, 0xc01e9d9cc8?, 0xc00e067980)
+	/home/abhinav/mgpusim/akita/mem/cache/writeback/writebufferstage.go:143 +0x488
+github.com/sarchlab/akita/v3/mem/cache/writeback.(*writeBufferStage).processWriteBufferFetch(0xc01e9d9ce8?, 0x3f3bbfacb1570325, 0xc01e9d9d08?)
+	/home/abhinav/mgpusim/akita/mem/cache/writeback/writebufferstage.go:61 +0x105
+github.com/sarchlab/akita/v3/mem/cache/writeback.(*writeBufferStage).processNewTransaction(0xc002905a40, 0x3f3bbfacb1570325)
+	/home/abhinav/mgpusim/akita/mem/cache/writeback/writebufferstage.go:41 +0xb3
+github.com/sarchlab/akita/v3/mem/cache/writeback.(*writeBufferStage).Tick(0xc002905a40, 0x3f3bbfacb1570325)
+	/home/abhinav/mgpusim/akita/mem/cache/writeback/writebufferstage.go:27 +0x46
+github.com/sarchlab/akita/v3/mem/cache/writeback.(*Cache).runStage(0xc001c04540, 0x3f3bbfacb1570325, {0xc451a0, 0xc002905a40})
+	/home/abhinav/mgpusim/akita/mem/cache/writeback/writebackcache.go:110 +0x3c
+github.com/sarchlab/akita/v3/mem/cache/writeback.(*Cache).runPipeline(0xc001c04540, 0x3f3bbfacb1570325)
+	/home/abhinav/mgpusim/akita/mem/cache/writeback/writebackcache.go:100 +0x148
+github.com/sarchlab/akita/v3/mem/cache/writeback.(*Cache).Tick(0xc001c04540, 0x3f3bbfacb1570325)
+	/home/abhinav/mgpusim/akita/mem/cache/writeback/writebackcache.go:81 +0x51
+github.com/sarchlab/akita/v3/sim.(*TickingComponent).Handle(0xc002b7dce0, {0xc48278?, 0xc014c875f0?})
+	/home/abhinav/mgpusim/akita/sim/ticker.go:140 +0x3f
+github.com/sarchlab/akita/v3/sim.(*SerialEngine).Run(0xc0001aa480)
+	/home/abhinav/mgpusim/akita/sim/serialengine.go:96 +0x354
+github.com/sarchlab/mgpusim/v3/driver.(*Driver).runEngine(0xc0001b6820)
+	/home/abhinav/mgpusim/driver/driver.go:125 +0xa4
+created by github.com/sarchlab/mgpusim/v3/driver.(*Driver).runAsync in goroutine 57
+	/home/abhinav/mgpusim/driver/driver.go:108 +0x18a
+
+real	0m58.509s
+user	1m12.918s
+sys	0m1.157s
