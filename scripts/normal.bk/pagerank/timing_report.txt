@@ -1,0 +1,7 @@
+normal
+Monitoring simulation with http://localhost:38331
+Number node 8192, number connection 33554432
+
+real	85m37.149s
+user	132m34.417s
+sys	1m11.110s
