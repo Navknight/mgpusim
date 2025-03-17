@@ -5,11 +5,11 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/sarchlab/akita/v3/mem/cache/writeback"
 	"github.com/sarchlab/akita/v3/sim"
 	"github.com/sarchlab/akita/v3/tracing"
 	"github.com/sarchlab/mgpusim/v3/timing/cu"
 	"github.com/sarchlab/mgpusim/v3/timing/rdma"
-	"github.com/sarchlab/akita/v3/mem/cache/writeback"
 	"github.com/tebeka/atexit"
 )
 
@@ -225,9 +225,6 @@ func (r *Runner) addCacheHitRateTracer() {
 			r.cacheHitRateTracers = append(r.cacheHitRateTracers,
 				cacheHitRateTracer{tracer: tracer, cache: cache})
 			tracing.CollectTrace(cache, tracer)
-			if l2Cache, ok := cache.(*writeback.Cache); ok {
-				fmt.Println(l2Cache.GetBlockAccessStats())
-			}
 		}
 	}
 }
@@ -498,6 +495,14 @@ func (r *Runner) reportCacheHitRate() {
 			tracer.cache.Name(), "write-miss", float64(writeMiss))
 		r.metricsCollector.Collect(
 			tracer.cache.Name(), "write-mshr-hit", float64(writeMSHRHit))
+	}
+
+	for _, gpu := range r.platform.GPUs {
+		for _, cache := range gpu.L2Caches {
+			if l2Cache, ok := cache.(*writeback.Cache); ok {
+				fmt.Println(l2Cache.GetBlockAccessStats())
+			}
+		}
 	}
 }
 
