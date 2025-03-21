@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/sarchlab/akita/v3/mem/cache/writearound"
 	"github.com/sarchlab/akita/v3/mem/cache/writeback"
 	"github.com/sarchlab/akita/v3/sim"
 	"github.com/sarchlab/akita/v3/tracing"
@@ -503,11 +504,38 @@ func (r *Runner) reportCacheHitRate() {
 				fmt.Println(l2Cache.GetBlockAccessStats())
 			}
 		}
-		fmt.Println("infinite cache stats")
+		if r.L2Infinite {
+			fmt.Println("infinite cache stats")
 
-		for _, cache := range gpu.L2Caches {
-			if l2cache, ok := cache.(*writeback.Cache); ok {
-				fmt.Println(l2cache.GetInfiniteCacheStats())
+			for _, cache := range gpu.L2Caches {
+				if l2cache, ok := cache.(*writeback.Cache); ok {
+					fmt.Println(l2cache.GetInfiniteCacheStats())
+				}
+			}
+		}
+
+		if r.L1Prefetcher > 0 {
+			for _, cache := range gpu.L1VCaches {
+				if writeAroundCache, ok := cache.(*writearound.Cache); ok {
+					prefetcher := writeAroundCache.Prefetcher
+
+					prefetchHits := prefetcher.GetPrefetchHits()
+					prefetchMisses := prefetcher.GetPrefetchMisses()
+					totalPrefetches := prefetcher.GetTotalPrefetches()
+					successfulPrefetches := prefetcher.GetSuccessfulPrefetches()
+					completedPrefetches := prefetcher.GetCompletedPrefetches()
+					inCache := completedPrefetches - prefetchMisses - prefetchHits
+
+					r.metricsCollector.Collect(cache.Name(), "prefetch-hits", float64(prefetchHits))
+					r.metricsCollector.Collect(cache.Name(), "prefetch-misses", float64(prefetchMisses))
+					r.metricsCollector.Collect(cache.Name(), "total-prefetches", float64(totalPrefetches))
+					r.metricsCollector.Collect(cache.Name(), "successful-prefetches", float64(successfulPrefetches))
+					r.metricsCollector.Collect(cache.Name(), "completed-prefetches", float64(completedPrefetches))
+					r.metricsCollector.Collect(cache.Name(), "in-cache", float64(inCache))
+
+					accuracy := prefetcher.GetPrefetchAccuracy()
+					r.metricsCollector.Collect(cache.Name(), "prefetch-accuracy", accuracy)
+				}
 			}
 		}
 	}

@@ -38,6 +38,10 @@ type R9NanoPlatformBuilder struct {
 	perfAnalyzer         *analysis.PerfAnalyzer
 	visTracer            tracing.Tracer
 
+	l1Prefetcher int
+	l2Prefetcher int
+	l2Infinite   bool
+
 	globalStorage *mem.Storage
 
 	gpus []*GPU
@@ -53,6 +57,21 @@ func MakeR9NanoBuilder() R9NanoPlatformBuilder {
 		traceVisStartTime: -1,
 		traceVisEndTime:   -1,
 	}
+	return b
+}
+
+func (b R9NanoPlatformBuilder) WithL1Prefetcher(prefetcher int) R9NanoPlatformBuilder {
+	b.l1Prefetcher = prefetcher
+	return b
+}
+
+func (b R9NanoPlatformBuilder) WithL2Prefetcher(prefetcher int) R9NanoPlatformBuilder {
+	b.l2Prefetcher = prefetcher
+	return b
+}
+
+func (b R9NanoPlatformBuilder) WithL2Infinite() R9NanoPlatformBuilder {
+	b.l2Infinite = true
 	return b
 }
 
@@ -359,6 +378,18 @@ func (b *R9NanoPlatformBuilder) createGPUBuilder(
 		WithLog2MemoryBankInterleavingSize(7).
 		WithLog2PageSize(b.log2PageSize).
 		WithGlobalStorage(b.globalStorage)
+
+	if b.l1Prefetcher > 0 {
+		gpuBuilder = gpuBuilder.WithL1Prefetcher(b.l1Prefetcher)
+	}
+
+	if b.l2Prefetcher > 0 {
+		gpuBuilder = gpuBuilder.WithL2Prefetcher(b.l2Prefetcher)
+	}
+
+	if b.l2Infinite {
+		gpuBuilder = gpuBuilder.WithL2Infinite()
+	}
 
 	if b.monitor != nil {
 		gpuBuilder = gpuBuilder.WithMonitor(b.monitor)

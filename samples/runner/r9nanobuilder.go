@@ -78,6 +78,10 @@ type R9NanoGPUBuilder struct {
 	l1TLBToL2TLBConnection *sim.DirectConnection
 	l1ToL2Connection       *sim.DirectConnection
 	l2ToDramConnection     *sim.DirectConnection
+
+	l1Prefetcher int
+	l2Prefetcher int
+	l2Infinite   bool
 }
 
 // MakeR9NanoGPUBuilder provides a GPU builder that can builds the R9Nano GPU.
@@ -93,6 +97,21 @@ func MakeR9NanoGPUBuilder() R9NanoGPUBuilder {
 		l2CacheSize:                    2 * mem.MB,
 		dramSize:                       4 * mem.GB,
 	}
+	return b
+}
+
+func (b R9NanoGPUBuilder) WithL1Prefetcher(degree int) R9NanoGPUBuilder {
+	b.l1Prefetcher = degree
+	return b
+}
+
+func (b R9NanoGPUBuilder) WithL2Prefetcher(degree int) R9NanoGPUBuilder {
+	b.l2Prefetcher = degree
+	return b
+}
+
+func (b R9NanoGPUBuilder) WithL2Infinite() R9NanoGPUBuilder {
+	b.l2Infinite = true
 	return b
 }
 
@@ -490,6 +509,10 @@ func (b *R9NanoGPUBuilder) buildSAs() {
 		withLog2PageSize(b.log2PageSize).
 		withNumCU(b.numCUPerShaderArray)
 
+	if b.l1Prefetcher > 0 {
+		saBuilder = saBuilder.withL1Prefetcher(b.l1Prefetcher)
+	}
+
 	if b.enableISADebugging {
 		saBuilder = saBuilder.withIsaDebugging()
 	}
@@ -518,6 +541,10 @@ func (b *R9NanoGPUBuilder) buildL2Caches() {
 		WithByteSize(byteSize).
 		WithNumMSHREntry(64).
 		WithNumReqPerCycle(16)
+
+	if b.l2Prefetcher > 0 {
+		l2Builder = l2Builder.WithPrefetcherEnabled(b.l2Prefetcher)
+	}
 
 	for i := 0; i < b.numMemoryBank; i++ {
 		cacheName := fmt.Sprintf("%s.L2[%d]", b.gpuName, i)
