@@ -42,8 +42,8 @@ var bufferLevelTracePeriodFlag = flag.Float64("buffer-level-trace-period", 0.0,
 var simdBusyTimeTracerFlag = flag.Bool("report-busy-time", false, "Report SIMD Unit's busy time")
 var reportCPIStackFlag = flag.Bool("report-cpi-stack", false, "Report CPI stack")
 var customPortForAkitaRTM = flag.Int("akitartm-port", 0,
-	`Custom port to host AkitaRTM. A 4-digit or 5-digit port number is required. If 
-this number is not given or a invalid number is given number, a random port 
+	`Custom port to host AkitaRTM. A 4-digit or 5-digit port number is required. If
+this number is not given or a invalid number is given number, a random port
 will be used.`)
 var disableAkitaRTM = flag.Bool("disable-rtm", false, "Disable the AkitaRTM monitoring portal")
 
@@ -70,6 +70,9 @@ var visTraceStartTime = flag.Float64("trace-vis-start", -1,
 var visTraceEndTime = flag.Float64("trace-vis-end", -1,
 	"The end time of collecting visualization traces. A negative number"+
 		"means that the trace will be collected to the end of the simulation.")
+var l1Prefetcher = flag.Int("l1-prefetcher", 0, "Enable L1 prefetcher with degree")
+var l2Prefetcher = flag.Int("l2-prefetcher", 0, "Enable L2 prefetcher with degree")
+var l2Infinite = flag.Bool("infinite-l2", false, "enable infinite l2 cache")
 
 // ParseFlag applies the runner flag to runner object
 //
@@ -121,6 +124,20 @@ func (r *Runner) ParseFlag() *Runner {
 
 	if *reportCPIStackFlag {
 		r.ReportCPIStack = true
+	}
+
+	if *l1Prefetcher > 0 {
+		r.L1Prefetcher = *l1Prefetcher
+	} else {
+		panic("l1 prefetcher flag not set")
+	}
+
+	if *l2Prefetcher > 0 {
+		r.L2Prefetcher = *l2Prefetcher
+	}
+
+	if *l2Infinite {
+		r.L2Infinite = true
 	}
 
 	if *reportAll {

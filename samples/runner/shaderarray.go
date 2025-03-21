@@ -50,6 +50,8 @@ type shaderArrayBuilder struct {
 	visTracer    tracing.Tracer
 	memTracer    tracing.Tracer
 
+	l1Prefetcher int
+
 	connectionCount int
 }
 
@@ -62,6 +64,11 @@ func makeShaderArrayBuilder() shaderArrayBuilder {
 		log2CacheLineSize: 6,
 		log2PageSize:      12,
 	}
+	return b
+}
+
+func (b shaderArrayBuilder) withL1Prefetcher(degree int) shaderArrayBuilder {
+	b.l1Prefetcher = degree
 	return b
 }
 
@@ -357,6 +364,10 @@ func (b *shaderArrayBuilder) buildL1VCaches(sa *shaderArray) {
 		WithWayAssociativity(4).
 		WithNumMSHREntry(16).
 		WithTotalByteSize(16 * mem.KB)
+
+	if b.l1Prefetcher > 0 {
+		builder = builder.WithPrefetcher(b.l1Prefetcher)
+	}
 
 	if b.visTracer != nil {
 		builder = builder.WithVisTracer(b.visTracer)
