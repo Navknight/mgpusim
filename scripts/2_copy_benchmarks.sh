@@ -16,16 +16,13 @@ mkdir -p prefetcher
 
 # Define the folders to copy
 benchmarks=(
-    "pagerank"
+    "bfs"
     "bitonicsort"
     "fir"
-    "floydwarshall"
-   "kmeans"
+    "conv2d"
     "matrixmultiplication"
-    "matrixtranspose"
     "simpleconvolution"
-   "spmv"
-   "stencil2d"
+    "stencil2d"
 )
 
 # Source directory

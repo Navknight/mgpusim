@@ -128,8 +128,6 @@ func (r *Runner) ParseFlag() *Runner {
 
 	if *l1Prefetcher > 0 {
 		r.L1Prefetcher = *l1Prefetcher
-	} else {
-		panic("l1 prefetcher flag not set")
 	}
 
 	if *l2Prefetcher > 0 {
