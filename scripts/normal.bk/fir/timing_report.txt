@@ -1,6 +1,0 @@
-normal
-Monitoring simulation with http://localhost:44661
-
-real	27m1.809s
-user	37m56.225s
-sys	0m13.874s
