@@ -42,7 +42,7 @@ for benchmark in benchmarks:
         submit_file.write(benchmark_params[benchmark] + " ")
         
     # Add unified-gpus for specific benchmarks
-    if benchmark in ['fir', 'matrixmultiplication', 'simpleconvolution', 'bitonicort', 'bfs', 'stencil2d']:
+    if benchmark in ['fir', 'matrixmultiplication', 'simpleconvolution', 'bitonicsort', 'bfs', 'stencil2d']:
         submit_file.write("-unified-gpus=1,2,3,4 ")
         
     submit_file.write(";} >>log.txt 2>> timing_report.txt\n")
