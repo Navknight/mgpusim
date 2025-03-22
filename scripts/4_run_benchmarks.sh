@@ -26,10 +26,11 @@ run_benchmark() {
   # Mark this benchmark as started
   benchmark_status["$benchmark"]=1
   (
+    # Use a subshell with cd to avoid changing the main script's directory
     cd "$config" || exit 1
-    echo "Starting benchmark: $benchmark at $(date)" >&2
+    echo "Starting benchmark: $config/$benchmark at $(date)" >&2
     bash "${benchmark}.sh" >"${benchmark}.log" 2>&1
-    echo "Finished benchmark: $benchmark at $(date)" >&2
+    echo "Finished benchmark: $config/$benchmark at $(date)" >&2
   ) &
 }
 # Function to count running benchmarks
