@@ -5,6 +5,7 @@ prefetcher_values = [2, 4, 8, 10, 12, 16]
 
 benchmarks = [
     'bfs',
+    'bitonicsort',
     'conv2d',
     'fir',
     'matrixmultiplication',
@@ -14,6 +15,7 @@ benchmarks = [
 
 # Parameters from the image
 benchmark_params = {
+    'bitonicsort': '-length=1048576',
     'bfs': '-node=131072',
     'conv2d': '-W=1024 -H=1024',  # Using C2D params for conv2d
     'fir': '-length=19824640',
