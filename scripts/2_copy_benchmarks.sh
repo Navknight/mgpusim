@@ -1,25 +1,15 @@
 #!/bin/bash
 
-# mkdir private;
-# mkdir shared;
-# mkdir mgvm;
-# mkdir mgvm-nobalance/;
-
-# cp -r ../mgpusim/samples private/
-# cp -r ../mgpusim/samples shared/
-# cp -r ../mgpusim/samples mgvm/
-# cp -r ../mgpusim/samples mgvm-nobalance/
-
 # Create the target directories
 mkdir -p normal
 mkdir -p prefetcher
 
-# Define the folders to copy
+# Define the benchmarks to copy
 benchmarks=(
     "bfs"
     "bitonicsort"
-    "fir"
     "conv2d"
+    "fir"
     "matrixmultiplication"
     "simpleconvolution"
     "stencil2d"
@@ -28,10 +18,21 @@ benchmarks=(
 # Source directory
 source_dir="../samples"
 
+echo "Copying benchmarks from $source_dir to normal/ and prefetcher/ directories..."
+
 # Copy the specified folders to the 'normal' directory
 for benchmark in "${benchmarks[@]}"; do
     if [ -d "$source_dir/$benchmark" ]; then
+        echo "Copying $benchmark to normal/"
         cp -r "$source_dir/$benchmark" normal/
+        
+        # Verify the binary exists and make it executable
+        if [ -f "$source_dir/$benchmark/$benchmark" ]; then
+            chmod +x "normal/$benchmark/$benchmark"
+            echo "  ✓ Binary found and made executable"
+        else
+            echo "  ✗ Binary not found in $source_dir/$benchmark"
+        fi
     else
         echo "Warning: $source_dir/$benchmark does not exist."
     fi
@@ -40,7 +41,16 @@ done
 # Copy the specified folders to the 'prefetcher' directory
 for benchmark in "${benchmarks[@]}"; do
     if [ -d "$source_dir/$benchmark" ]; then
+        echo "Copying $benchmark to prefetcher/"
         cp -r "$source_dir/$benchmark" prefetcher/
+        
+        # Verify the binary exists and make it executable
+        if [ -f "$source_dir/$benchmark/$benchmark" ]; then
+            chmod +x "prefetcher/$benchmark/$benchmark"
+            echo "  ✓ Binary found and made executable"
+        else
+            echo "  ✗ Binary not found in $source_dir/$benchmark"
+        fi
     else
         echo "Warning: $source_dir/$benchmark does not exist."
     fi
