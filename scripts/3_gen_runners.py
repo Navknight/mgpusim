@@ -36,14 +36,11 @@ for benchmark in benchmarks:
     submit_file.write("./" + benchmark + " ")
     submit_file.write("-timing ")
     submit_file.write("-report-all ")
+    submit_file.write("-unified-gpus=1,2,3,4 ")
     
     # Add benchmark specific parameters
     if benchmark in benchmark_params:
         submit_file.write(benchmark_params[benchmark] + " ")
-        
-    # Add unified-gpus for specific benchmarks
-    if benchmark in ['fir', 'matrixmultiplication', 'simpleconvolution', 'bitonicsort', 'bfs', 'stencil2d']:
-        submit_file.write("-unified-gpus=1,2,3,4 ")
         
     submit_file.write(";} >>log.txt 2>> timing_report.txt\n")
     submit_file.close()
@@ -64,17 +61,13 @@ for benchmark in benchmarks:
         submit_file.write("./" + benchmark + " ")
         submit_file.write("-timing ")
         submit_file.write("-report-all ")
-        submit_file.write("-use-prefetcher ")
         submit_file.write(f"-l1-prefetcher={pvalue} ")
-        submit_file.write(f"-metrics-file-name={metric_name} ")
+        submit_file.write(f"-metric-file-name={metric_name} ")
+        submit_file.write("-unified-gpus=1,2,3,4 ")
         
         # Add benchmark specific parameters
         if benchmark in benchmark_params:
             submit_file.write(benchmark_params[benchmark] + " ")
-        
-        # Add unified-gpus for specific benchmarks
-        if benchmark in ['fir', 'matrixmultiplication', 'simpleconvolution', 'bitonicsort', 'bfs', 'stencil2d']:
-            submit_file.write("-unified-gpus=1,2,3,4 ")
             
         submit_file.write(f";}} >>log_{pvalue}.txt 2>> timing_report_{pvalue}.txt\n")
     

@@ -1,10 +1,11 @@
 
 #!/bin/bash
 # Configuration arrays
-configs=("normal" "prefetcher")
+configs=("prefetcher" "normal")
 benchmarks=(
   "bfs"
   "bitonicsort"
+  "conv2d"
   "fir"
   "matrixmultiplication"
   "simpleconvolution"
