@@ -518,7 +518,31 @@ func (r *Runner) reportCacheHitRate() {
 			for _, cache := range gpu.L1VCaches {
 				if writeAroundCache, ok := cache.(*writearound.Cache); ok {
 					prefetcher := writeAroundCache.Prefetcher
+					if prefetcher == nil {
+						continue
+					}
 
+					// Get detailed stats
+					detailedStats := prefetcher.GetDetailedStats()
+
+					// Add all stats to metrics collector
+					for key, value := range detailedStats {
+						if floatVal, ok := value.(float64); ok {
+							r.metricsCollector.Collect(cache.Name(), "prefetcher."+key, floatVal)
+						} else if intVal, ok := value.(int); ok {
+							r.metricsCollector.Collect(cache.Name(), "prefetcher."+key, float64(intVal))
+						} else if uintVal, ok := value.(uint64); ok {
+							r.metricsCollector.Collect(cache.Name(), "prefetcher."+key, float64(uintVal))
+						} else if boolVal, ok := value.(bool); ok {
+							boolAsFloat := 0.0
+							if boolVal {
+								boolAsFloat = 1.0
+							}
+							r.metricsCollector.Collect(cache.Name(), "prefetcher."+key, boolAsFloat)
+						}
+					}
+
+					// Basic metrics for backward compatibility
 					prefetchHits := prefetcher.GetPrefetchHits()
 					prefetchMisses := prefetcher.GetPrefetchMisses()
 					totalPrefetches := prefetcher.GetTotalPrefetches()
@@ -533,8 +557,23 @@ func (r *Runner) reportCacheHitRate() {
 					r.metricsCollector.Collect(cache.Name(), "completed-prefetches", float64(completedPrefetches))
 					r.metricsCollector.Collect(cache.Name(), "in-cache", float64(inCache))
 
+					// Calculate ratios and percentages
 					accuracy := prefetcher.GetPrefetchAccuracy()
 					r.metricsCollector.Collect(cache.Name(), "prefetch-accuracy", accuracy)
+
+					// Opportunity metrics
+					if prefetchHits > 0 {
+						prefetchUtilization := float64(prefetchHits) / float64(completedPrefetches) * 100.0
+						r.metricsCollector.Collect(cache.Name(), "prefetch-utilization", prefetchUtilization)
+					}
+
+					if totalPrefetches > 0 {
+						issueRate := float64(successfulPrefetches) / float64(totalPrefetches) * 100.0
+						r.metricsCollector.Collect(cache.Name(), "prefetch-issue-rate", issueRate)
+					}
+
+					// Print prefetcher report to standard output
+					fmt.Println(prefetcher.GenerateReport())
 				}
 			}
 		}
