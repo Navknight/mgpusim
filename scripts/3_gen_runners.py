@@ -36,7 +36,7 @@ for benchmark in benchmarks:
     submit_file.write("./" + benchmark + " ")
     submit_file.write("-timing ")
     submit_file.write("-report-all ")
-    submit_file.write("-unified-gpus=1,2,3,4 ")
+    # submit_file.write("-unified-gpus=1,2,3,4 ")
     
     # Add benchmark specific parameters
     if benchmark in benchmark_params:
@@ -63,7 +63,7 @@ for benchmark in benchmarks:
         submit_file.write("-report-all ")
         submit_file.write(f"-l1-prefetcher={pvalue} ")
         submit_file.write(f"-metric-file-name={metric_name} ")
-        submit_file.write("-unified-gpus=1,2,3,4 ")
+        # submit_file.write("-unified-gpus=1,2,3,4 ")
         
         # Add benchmark specific parameters
         if benchmark in benchmark_params:

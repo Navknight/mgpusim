@@ -4,12 +4,12 @@
 configs=("prefetcher" "normal")
 benchmarks=(
   "bfs"
-  "bitonicsort"
+  # "bitonicsort"
   "conv2d"
-  "fir"
+  # "fir"
   "matrixmultiplication"
-  "simpleconvolution"
-  "stencil2d"
+  # "simpleconvolution"
+  # "stencil2d"
 )
 # Array to track which benchmarks have been started
 declare -A benchmark_status
@@ -61,9 +61,9 @@ for config in "${configs[@]}"; do
   while [ $scheduled_benchmarks -lt $total_benchmarks ]; do
     available_ram=$(check_ram)
     echo "Available RAM: ${available_ram}GB"
-    num_benchmarks=$((available_ram / 4))
-    if [ $num_benchmarks -gt 2 ]; then
-      num_benchmarks=2
+    num_benchmarks=$((available_ram / 6))
+    if [ $num_benchmarks -gt 3 ]; then
+      num_benchmarks=3
     elif [ $num_benchmarks -lt 1 ]; then
       num_benchmarks=1
     fi
