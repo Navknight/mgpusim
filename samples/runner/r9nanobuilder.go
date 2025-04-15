@@ -82,6 +82,8 @@ type R9NanoGPUBuilder struct {
 	l1Prefetcher int
 	l2Prefetcher int
 	l2Infinite   bool
+
+	addressTracing string
 }
 
 // MakeR9NanoGPUBuilder provides a GPU builder that can builds the R9Nano GPU.
@@ -97,6 +99,11 @@ func MakeR9NanoGPUBuilder() R9NanoGPUBuilder {
 		l2CacheSize:                    256 * mem.KB,
 		dramSize:                       4 * mem.GB,
 	}
+	return b
+}
+
+func (b R9NanoGPUBuilder) WithAddressTracing(filename string) R9NanoGPUBuilder {
+	b.addressTracing = filename
 	return b
 }
 
@@ -511,6 +518,12 @@ func (b *R9NanoGPUBuilder) buildSAs() {
 
 	if b.l1Prefetcher > 0 {
 		saBuilder = saBuilder.withL1Prefetcher(b.l1Prefetcher)
+	}
+
+	if b.addressTracing != "" {
+		saBuilder = saBuilder.withAddressTracing(b.addressTracing)
+	} else {
+		panic("address tracing name not reached")
 	}
 
 	if b.enableISADebugging {

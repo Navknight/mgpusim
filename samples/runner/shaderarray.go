@@ -52,6 +52,8 @@ type shaderArrayBuilder struct {
 
 	l1Prefetcher int
 
+	addressTracing string
+
 	connectionCount int
 }
 
@@ -64,6 +66,11 @@ func makeShaderArrayBuilder() shaderArrayBuilder {
 		log2CacheLineSize: 6,
 		log2PageSize:      12,
 	}
+	return b
+}
+
+func (b shaderArrayBuilder) withAddressTracing(filename string) shaderArrayBuilder {
+	b.addressTracing = filename
 	return b
 }
 
@@ -364,6 +371,10 @@ func (b *shaderArrayBuilder) buildL1VCaches(sa *shaderArray) {
 		WithWayAssociativity(4).
 		WithNumMSHREntry(16).
 		WithTotalByteSize(16 * mem.KB)
+
+	if b.addressTracing != "" {
+		builder = builder.WithAddressTracingFilename(b.addressTracing)
+	}
 
 	if b.l1Prefetcher > 0 {
 		builder = builder.WithPrefetcher(b.l1Prefetcher)

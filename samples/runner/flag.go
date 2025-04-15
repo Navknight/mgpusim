@@ -73,10 +73,8 @@ var visTraceEndTime = flag.Float64("trace-vis-end", -1,
 var l1Prefetcher = flag.Int("l1-prefetcher", 0, "Enable L1 prefetcher with degree")
 var l2Prefetcher = flag.Int("l2-prefetcher", 0, "Enable L2 prefetcher with degree")
 var l2Infinite = flag.Bool("infinite-l2", false, "enable infinite l2 cache")
-
-var mergeAddressTraces = flag.Bool("merge-address-traces", false, "Merge all address trace files into a single chronological file")
-var addressTraceDir = flag.String("address-trace-dir", "",
-	"The directory to save memory address traces for writearound caches")
+var addressTraceFile = flag.String("address-trace-file", "",
+	"File name for address tracing")
 
 func (r *Runner) ParseFlag() *Runner {
 	if *parallelFlag {
@@ -137,6 +135,10 @@ func (r *Runner) ParseFlag() *Runner {
 
 	if *l2Infinite {
 		r.L2Infinite = true
+	}
+
+	if *addressTraceFile != "" {
+		r.addressTracingFilename = *addressTraceFile
 	}
 
 	if *reportAll {

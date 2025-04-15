@@ -2,7 +2,6 @@ package runner
 
 import (
 	"fmt"
-	"path/filepath"
 	"sort"
 	"strings"
 
@@ -372,16 +371,6 @@ func (r *Runner) reportStats() {
 	r.reportRDMATransactionCount()
 	r.reportDRAMTransactionCount()
 	r.dumpMetrics()
-
-	if *addressTraceDir != "" && *mergeAddressTraces {
-		outputFile := filepath.Join(*addressTraceDir, "merged_address_traces.csv")
-		err := MergeAddressTraces(*addressTraceDir, outputFile)
-		if err != nil {
-			fmt.Printf("Error merging address traces: %v\n", err)
-		} else {
-			fmt.Printf("Merged address traces written to %s\n", outputFile)
-		}
-	}
 }
 
 func (r *Runner) reportInstCount() {

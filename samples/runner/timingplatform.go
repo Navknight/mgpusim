@@ -42,6 +42,8 @@ type R9NanoPlatformBuilder struct {
 	l2Prefetcher int
 	l2Infinite   bool
 
+	addressTracingFile string
+
 	globalStorage *mem.Storage
 
 	gpus []*GPU
@@ -57,6 +59,11 @@ func MakeR9NanoBuilder() R9NanoPlatformBuilder {
 		traceVisStartTime: -1,
 		traceVisEndTime:   -1,
 	}
+	return b
+}
+
+func (b R9NanoPlatformBuilder) WithAddressTracing(filename string) R9NanoPlatformBuilder {
+	b.addressTracingFile = filename
 	return b
 }
 
@@ -381,6 +388,12 @@ func (b *R9NanoPlatformBuilder) createGPUBuilder(
 
 	if b.l1Prefetcher > 0 {
 		gpuBuilder = gpuBuilder.WithL1Prefetcher(b.l1Prefetcher)
+	}
+
+	if b.addressTracingFile != "" {
+		gpuBuilder = gpuBuilder.WithAddressTracing(b.addressTracingFile)
+	} else {
+		panic("filename not pen")
 	}
 
 	if b.l2Prefetcher > 0 {
