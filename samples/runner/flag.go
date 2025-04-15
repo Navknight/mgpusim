@@ -74,9 +74,10 @@ var l1Prefetcher = flag.Int("l1-prefetcher", 0, "Enable L1 prefetcher with degre
 var l2Prefetcher = flag.Int("l2-prefetcher", 0, "Enable L2 prefetcher with degree")
 var l2Infinite = flag.Bool("infinite-l2", false, "enable infinite l2 cache")
 
-// ParseFlag applies the runner flag to runner object
-//
-//nolint:gocyclo
+var mergeAddressTraces = flag.Bool("merge-address-traces", false, "Merge all address trace files into a single chronological file")
+var addressTraceDir = flag.String("address-trace-dir", "",
+	"The directory to save memory address traces for writearound caches")
+
 func (r *Runner) ParseFlag() *Runner {
 	if *parallelFlag {
 		r.Parallel = true

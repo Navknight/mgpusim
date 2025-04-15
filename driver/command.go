@@ -178,7 +178,6 @@ func removeMsgFromMsgList(msg sim.Msg, msgs []sim.Msg) []sim.Msg {
 type LaunchUnifiedMultiGPUKernelCommand struct {
 	ID           string
 	CodeObject   *insts.HsaCo
-	GridSize     [3]uint32
 	WGSize       [3]uint16
 	KernelArgs   interface{}
 	PacketArray  []*kernels.HsaKernelDispatchPacket

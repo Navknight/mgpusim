@@ -160,7 +160,6 @@ func (d *Driver) RegisterGPU(
 	d.devices = append(d.devices, gpuDevice)
 }
 
-// Tick ticks
 func (d *Driver) Tick(now sim.VTimeInSec) bool {
 	madeProgress := false
 

@@ -2,6 +2,7 @@
 package runner
 
 import (
+	"fmt"
 	"log"
 
 	// Enable profiling
@@ -10,6 +11,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/sarchlab/akita/v3/mem/cache/writearound"
 	"github.com/sarchlab/akita/v3/monitoring"
 	"github.com/sarchlab/akita/v3/sim"
 	"github.com/sarchlab/akita/v3/tracing"
@@ -59,7 +61,33 @@ type Runner struct {
 	L2Prefetcher int
 	L2Infinite   bool
 
+	addressTracer *AddressTracer
+
 	GPUIDs []int
+}
+
+func (r *Runner) setupAddressTracer() {
+	fmt.Println("setting up address tracer")
+	r.addressTracer = NewAddressTracer(r.platform.Engine, *addressTraceDir)
+	if r.addressTracer == nil {
+		panic("addressTracer not created")
+	}
+
+	for _, gpu := range r.platform.GPUs {
+		for _, cache := range gpu.L1VCaches {
+			if writeAroundCache, ok := cache.(*writearound.Cache); ok {
+				r.addressTracer.RegisterCache(writeAroundCache)
+				tracing.CollectTrace(writeAroundCache, r.addressTracer)
+			}
+		}
+	}
+
+	atexit.Register(func() {
+		if r.addressTracer != nil {
+			r.addressTracer.DumpToFile()
+			fmt.Printf("Address traces dumped to %v", *addressTraceDir)
+		}
+	})
 }
 
 // Init initializes the platform simulate
@@ -78,6 +106,10 @@ func (r *Runner) Init() *Runner {
 	r.createUnifiedGPUs()
 
 	r.defineMetrics()
+
+	if *addressTraceDir != "" {
+		r.setupAddressTracer()
+	}
 
 	return r
 }

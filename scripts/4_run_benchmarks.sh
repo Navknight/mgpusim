@@ -4,12 +4,12 @@
 configs=("prefetcher" "normal")
 benchmarks=(
   "bfs"
-  # "bitonicsort"
+  "bitonicsort"
   "conv2d"
-  # "fir"
+  "fir"
   "matrixmultiplication"
-  # "simpleconvolution"
-  # "stencil2d"
+  "simpleconvolution"
+  "stencil2d"
 )
 # Array to track which benchmarks have been started
 declare -A benchmark_status
