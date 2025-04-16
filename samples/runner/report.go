@@ -476,6 +476,7 @@ func (r *Runner) reportCacheHitRate() {
 		writeHit := tracer.tracer.GetStepCount("write-hit")
 		writeMiss := tracer.tracer.GetStepCount("write-miss")
 		writeMSHRHit := tracer.tracer.GetStepCount("write-mshr-hit")
+		magicHit := tracer.tracer.GetStepCount("magic-hit")
 
 		totalTransaction := readHit + readMiss + readMSHRHit +
 			writeHit + writeMiss + writeMSHRHit
@@ -496,6 +497,7 @@ func (r *Runner) reportCacheHitRate() {
 			tracer.cache.Name(), "write-miss", float64(writeMiss))
 		r.metricsCollector.Collect(
 			tracer.cache.Name(), "write-mshr-hit", float64(writeMSHRHit))
+		r.metricsCollector.Collect(tracer.cache.Name(), "magic-hit", float64(magicHit))
 	}
 
 	for _, gpu := range r.platform.GPUs {

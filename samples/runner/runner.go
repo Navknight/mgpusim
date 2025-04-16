@@ -61,6 +61,8 @@ type Runner struct {
 
 	addressTracingFilename string
 
+	MagicCache bool
+
 	GPUIDs []int
 }
 
@@ -129,6 +131,10 @@ func (r *Runner) buildTimingPlatform() {
 
 	if r.addressTracingFilename != "" {
 		b = b.WithAddressTracing(r.addressTracingFilename)
+	}
+
+	if r.MagicCache {
+		b = b.WithMagicCache()
 	}
 
 	if r.Parallel {

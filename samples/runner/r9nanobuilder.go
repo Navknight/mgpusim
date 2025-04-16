@@ -84,6 +84,8 @@ type R9NanoGPUBuilder struct {
 	l2Infinite   bool
 
 	addressTracing string
+
+	magicMode bool
 }
 
 // MakeR9NanoGPUBuilder provides a GPU builder that can builds the R9Nano GPU.
@@ -99,6 +101,11 @@ func MakeR9NanoGPUBuilder() R9NanoGPUBuilder {
 		l2CacheSize:                    256 * mem.KB,
 		dramSize:                       4 * mem.GB,
 	}
+	return b
+}
+
+func (b R9NanoGPUBuilder) WithMagicMode() R9NanoGPUBuilder {
+	b.magicMode = true
 	return b
 }
 
@@ -254,9 +261,9 @@ func (b R9NanoGPUBuilder) WithGlobalStorage(
 // Build creates a pre-configure GPU similar to the AMD R9 Nano GPU.
 func (b R9NanoGPUBuilder) Build(name string, id uint64) *GPU {
 	b.createGPU(name, id)
-	b.buildSAs()
 	b.buildL2Caches()
 	b.buildDRAMControllers()
+	b.buildSAs()
 	b.buildCP()
 	b.buildL2TLB()
 
@@ -538,6 +545,11 @@ func (b *R9NanoGPUBuilder) buildSAs() {
 
 	for i := 0; i < b.numShaderArray; i++ {
 		saName := fmt.Sprintf("%s.SA[%d]", b.gpuName, i)
+
+		if b.magicMode {
+			saBuilder = saBuilder.withMagicCache(b.drams[i].GetStorage())
+		}
+
 		b.buildSA(saBuilder, saName)
 	}
 }

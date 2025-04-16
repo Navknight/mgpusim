@@ -75,6 +75,7 @@ var l2Prefetcher = flag.Int("l2-prefetcher", 0, "Enable L2 prefetcher with degre
 var l2Infinite = flag.Bool("infinite-l2", false, "enable infinite l2 cache")
 var addressTraceFile = flag.String("address-trace-file", "",
 	"File name for address tracing")
+var magicCache = flag.Bool("magic-cache", false, "Use all hit l1v cache")
 
 func (r *Runner) ParseFlag() *Runner {
 	if *parallelFlag {
@@ -139,6 +140,10 @@ func (r *Runner) ParseFlag() *Runner {
 
 	if *addressTraceFile != "" {
 		r.addressTracingFilename = *addressTraceFile
+	}
+
+	if *magicCache {
+		r.MagicCache = true
 	}
 
 	if *reportAll {

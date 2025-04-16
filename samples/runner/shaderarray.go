@@ -55,6 +55,15 @@ type shaderArrayBuilder struct {
 	addressTracing string
 
 	connectionCount int
+
+	magicMode   bool
+	dramStorage *mem.Storage
+}
+
+func (b shaderArrayBuilder) withMagicCache(dramStorage *mem.Storage) shaderArrayBuilder {
+	b.magicMode = true
+	b.dramStorage = dramStorage
+	return b
 }
 
 func makeShaderArrayBuilder() shaderArrayBuilder {
@@ -378,6 +387,12 @@ func (b *shaderArrayBuilder) buildL1VCaches(sa *shaderArray) {
 
 	if b.l1Prefetcher > 0 {
 		builder = builder.WithPrefetcher(b.l1Prefetcher)
+	}
+
+	if b.magicMode && b.dramStorage != nil {
+		builder = builder.WithMagicMode(b.dramStorage)
+	} else {
+		panic("magic mode not going to l1v")
 	}
 
 	if b.visTracer != nil {

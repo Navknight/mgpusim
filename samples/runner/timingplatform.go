@@ -44,6 +44,8 @@ type R9NanoPlatformBuilder struct {
 
 	addressTracingFile string
 
+	magicCache bool
+
 	globalStorage *mem.Storage
 
 	gpus []*GPU
@@ -64,6 +66,11 @@ func MakeR9NanoBuilder() R9NanoPlatformBuilder {
 
 func (b R9NanoPlatformBuilder) WithAddressTracing(filename string) R9NanoPlatformBuilder {
 	b.addressTracingFile = filename
+	return b
+}
+
+func (b R9NanoPlatformBuilder) WithMagicCache() R9NanoPlatformBuilder {
+	b.magicCache = true
 	return b
 }
 
@@ -392,6 +399,10 @@ func (b *R9NanoPlatformBuilder) createGPUBuilder(
 
 	if b.addressTracingFile != "" {
 		gpuBuilder = gpuBuilder.WithAddressTracing(b.addressTracingFile)
+	}
+
+	if b.magicCache {
+		gpuBuilder = gpuBuilder.WithMagicMode()
 	}
 
 	if b.l2Prefetcher > 0 {
