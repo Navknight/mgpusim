@@ -24,7 +24,7 @@ for benchmark in "${benchmarks[@]}"; do
     if [ -d "$source_dir/$benchmark" ]; then
         echo "Copying $benchmark to normal/"
         cp -r "$source_dir/$benchmark" normal/
-
+        
         # Verify the binary exists and make it executable
         if [ -f "$source_dir/$benchmark/$benchmark" ]; then
             chmod +x "normal/$benchmark/$benchmark"

@@ -391,8 +391,6 @@ func (b *shaderArrayBuilder) buildL1VCaches(sa *shaderArray) {
 
 	if b.magicMode && b.dramStorage != nil {
 		builder = builder.WithMagicMode(b.dramStorage)
-	} else {
-		panic("magic mode not going to l1v")
 	}
 
 	if b.visTracer != nil {
