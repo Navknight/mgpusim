@@ -129,8 +129,6 @@ func (r *Runner) buildTimingPlatform() {
 
 	if r.addressTracingFilename != "" {
 		b = b.WithAddressTracing(r.addressTracingFilename)
-	} else {
-		panic("filename not in run")
 	}
 
 	if r.Parallel {

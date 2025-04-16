@@ -392,8 +392,6 @@ func (b *R9NanoPlatformBuilder) createGPUBuilder(
 
 	if b.addressTracingFile != "" {
 		gpuBuilder = gpuBuilder.WithAddressTracing(b.addressTracingFile)
-	} else {
-		panic("filename not pen")
 	}
 
 	if b.l2Prefetcher > 0 {

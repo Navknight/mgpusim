@@ -522,8 +522,6 @@ func (b *R9NanoGPUBuilder) buildSAs() {
 
 	if b.addressTracing != "" {
 		saBuilder = saBuilder.withAddressTracing(b.addressTracing)
-	} else {
-		panic("address tracing name not reached")
 	}
 
 	if b.enableISADebugging {
