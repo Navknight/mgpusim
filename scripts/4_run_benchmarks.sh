@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # List of all benchmarks
-declare -a benchmarks=("bfs" "bitonicsort" "conv2d" "fir" "matrixmultiplication" "simpleconvolution" "stencil2d")
+declare -a benchmarks=( "bitonicsort" "conv2d" "fir" "stencil2d")
 declare -A params=(
-    ["bfs"]="-node=131072"
+    #["bfs"]="-node=131072"
     ["bitonicsort"]="-length=1048576"
     ["conv2d"]="-W=1024 -H=1024"
     ["fir"]="-length=19824640"
-    ["matrixmultiplication"]="-x=2048 -y=2048 -z=1024"
-    ["simpleconvolution"]="-width=4096 -height=4096"
+    #["matrixmultiplication"]="-x=2048 -y=2048 -z=1024"
+    #["simpleconvolution"]="-width=4096 -height=4096"
     ["stencil2d"]="-row=2048 -col=2048 -iter=10"
 )
 
