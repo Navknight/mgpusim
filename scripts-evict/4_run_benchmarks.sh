@@ -1,15 +1,15 @@
 #!/bin/bash
 
 # List of all benchmarks
-declare -a benchmarks=( "matrixmultiplication" "simpleconvolution")
+declare -a benchmarks=( "matrixmultiplication" "simpleconvolution" "bfs" "bitonicsort" "fir" "stencil2d" "conv2d")
 declare -A params=(
-    #["bfs"]="-node=131072"
-    # ["bitonicsort"]="-length=1048576"
-    # ["conv2d"]="-W=1024 -H=1024"
-    # ["fir"]="-length=19824640"
+    ["bfs"]="-node=131072"
+    ["bitonicsort"]="-length=1048576"
+    ["conv2d"]="-W=1024 -H=1024"
+    ["fir"]="-length=19824640"
     ["matrixmultiplication"]="-x=2048 -y=2048 -z=1024"
     ["simpleconvolution"]="-width=4096 -height=4096"
-    # ["stencil2d"]="-row=2048 -col=2048 -iter=10"
+    ["stencil2d"]="-row=2048 -col=2048 -iter=10"
 )
 
 # Configuration
@@ -46,11 +46,6 @@ execute_benchmark() {
         cd normal/$benchmark
         echo normal >> timing_report.txt
         { time ./$benchmark -timing -report-all ${params[$benchmark]}; } >>log.txt 2>> timing_report.txt
-        local exit_code=$?
-    else
-        cd normal/$benchmark
-        echo "prefetcher-$pvalue" >> timing_report_$pvalue.txt
-        { time ./$benchmark -timing -report-all -l1-prefetcher=$pvalue -metric-file-name=$pvalue ${params[$benchmark]}; } >>log_$pvalue.txt 2>> timing_report_$pvalue.txt
         local exit_code=$?
     fi
 
@@ -137,13 +132,6 @@ echo "Initializing job queue at $(date)" | tee -a $LOG_FILE
 # Add all normal jobs
 for benchmark in "${benchmarks[@]}"; do
     job_queue+=("$benchmark:normal:1")
-done
-
-# Add all prefetcher jobs
-for benchmark in "${benchmarks[@]}"; do
-    for pvalue in 1 2 4 8 16 32; do
-        job_queue+=("$benchmark:$pvalue:1")
-    done
 done
 
 echo "Starting benchmark runs at $(date) - ${#job_queue[@]} jobs queued" | tee -a $LOG_FILE

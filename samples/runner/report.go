@@ -501,11 +501,20 @@ func (r *Runner) reportCacheHitRate() {
 	}
 
 	for _, gpu := range r.platform.GPUs {
+		fmt.Println("L2 Cache")
 		for _, cache := range gpu.L2Caches {
 			if l2Cache, ok := cache.(*writeback.Cache); ok {
 				fmt.Println(l2Cache.GetBlockAccessStats())
 			}
 		}
+
+		fmt.Println("\nL1 Cache")
+		for _, cache := range gpu.L1VCaches {
+			if l1cache, ok := cache.(*writearound.Cache); ok {
+				fmt.Println(l1cache.GetBlockAccessStats())
+			}
+		}
+
 		if r.L2Infinite {
 			fmt.Println("infinite cache stats")
 
