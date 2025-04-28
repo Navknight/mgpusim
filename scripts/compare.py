@@ -288,9 +288,9 @@ def create_combined_performance_plot(df, output_folder):
     
     # Create a figure with minimal margins
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5), constrained_layout=True)
-    fig.subplots_adjust(left=0.05, right=0.95, top=0.9, bottom=0.15, wspace=0.2)
+    fig.subplots_adjust(left=0.05, right=0.95, top=0.9, bottom=0.25, wspace=0.2)
     
-    # Get evenly spaced x positions for the degrees
+    # Create uniform x-axis positions
     distinct_degrees = sorted(normalized_df['prefetch_degree'].unique())
     x_positions = list(range(len(distinct_degrees)))
     degree_to_position = dict(zip(distinct_degrees, x_positions))
@@ -299,15 +299,16 @@ def create_combined_performance_plot(df, output_folder):
     benchmarks = normalized_df['benchmark'].unique()
     markers = ['o', 's', '^', 'D', 'v', '<', '>', 'p', '*', 'h']
     
-    # Add formula annotations
-    formula1 = "Normalized Throughput = Throughput(degree) / Throughput(baseline)"
-    formula2 = "Normalized Exec. Time = Exec. Time(degree) / Exec. Time(baseline)"
+    # Add formula annotations using proper mathematical notation
+    formula1 = r"$\text{Normalized Throughput} = \frac{\text{Throughput}_{\text{degree}}}{\text{Throughput}_{\text{baseline}}}$"
+    formula2 = r"$\text{Normalized Exec. Time} = \frac{\text{Exec. Time}_{\text{degree}}}{\text{Exec. Time}_{\text{baseline}}}$"
     
     # Panel 1: Normalized Throughput
     for i, benchmark in enumerate(benchmarks):
         benchmark_data = normalized_df[normalized_df['benchmark'] == benchmark]
         
         # Map degrees to positions for equal spacing
+        benchmark_data = benchmark_data.sort_values('prefetch_degree')
         x_vals = [degree_to_position[degree] for degree in benchmark_data['prefetch_degree']]
         
         ax1.plot(x_vals, benchmark_data['normalized_throughput'], 
@@ -322,12 +323,12 @@ def create_combined_performance_plot(df, output_folder):
     ax1.grid(True, linestyle='--', alpha=0.7)
     ax1.axhline(y=1, color='r', linestyle='--', alpha=0.7)
     
-    # Set x-ticks to use prefetch degree values
+    # Set x-ticks to use evenly spaced positions with degree labels
     ax1.set_xticks(x_positions)
     ax1.set_xticklabels([str(int(degree)) for degree in distinct_degrees])
     
-    # Add formula annotation
-    ax1.text(0.5, -0.2, formula1, transform=ax1.transAxes, 
+    # Add formula annotation with proper math notation and more space
+    ax1.text(0.5, -0.35, formula1, transform=ax1.transAxes, 
              horizontalalignment='center', fontsize=10)
     
     # Panel 2: Normalized Execution Time
@@ -335,6 +336,7 @@ def create_combined_performance_plot(df, output_folder):
         benchmark_data = normalized_df[normalized_df['benchmark'] == benchmark]
         
         # Map degrees to positions for equal spacing
+        benchmark_data = benchmark_data.sort_values('prefetch_degree')
         x_vals = [degree_to_position[degree] for degree in benchmark_data['prefetch_degree']]
         
         ax2.plot(x_vals, benchmark_data['normalized_execution_time'], 
@@ -349,21 +351,21 @@ def create_combined_performance_plot(df, output_folder):
     ax2.grid(True, linestyle='--', alpha=0.7)
     ax2.axhline(y=1, color='r', linestyle='--', alpha=0.7)
     
-    # Set x-ticks to use prefetch degree values
+    # Set x-ticks to use evenly spaced positions with degree labels
     ax2.set_xticks(x_positions)
     ax2.set_xticklabels([str(int(degree)) for degree in distinct_degrees])
     
-    # Add formula annotation
-    ax2.text(0.5, -0.2, formula2, transform=ax2.transAxes, 
+    # Add formula annotation with proper math notation and more space
+    ax2.text(0.5, -0.35, formula2, transform=ax2.transAxes, 
              horizontalalignment='center', fontsize=10)
     
-    # Create a single legend for both panels
+    # Create a single legend for both panels positioned closer to the graph
     handles, labels = ax1.get_legend_handles_labels()
-    fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5, 0.05),
+    fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5, 0.3),
               fancybox=True, shadow=True, ncol=min(5, len(benchmarks)), fontsize=12)
     
     # Adjust layout
-    plt.tight_layout(rect=[0, 0.1, 1, 0.95])
+    plt.tight_layout(rect=[0, 0.15, 1, 0.95])
     
     # Save as PNG only with high DPI for quality
     plt.savefig(os.path.join(output_folder, 'combined_performance_metrics.png'), dpi=300, bbox_inches='tight', pad_inches=0.05)
@@ -425,17 +427,22 @@ def create_combined_cache_metrics_plot(df, output_folder):
     
     # Create a 2-panel figure
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
+    fig.subplots_adjust(left=0.05, right=0.95, top=0.9, bottom=0.25, wspace=0.2)
     
-    # Get evenly spaced x positions for the degrees
+    # Create uniform x-axis positions
     distinct_degrees = sorted(normalized_df['prefetch_degree'].unique())
     x_positions = list(range(len(distinct_degrees)))
     degree_to_position = dict(zip(distinct_degrees, x_positions))
+    
+    # Get prefetch degrees (excluding 0 for panel 2)
+    prefetch_degrees = [d for d in distinct_degrees if d > 0]
+    prefetch_positions = [degree_to_position[d] for d in prefetch_degrees]
     
     # Prepare distinct markers and colors for different benchmarks
     benchmarks = normalized_df['benchmark'].unique()
     markers = ['o', 's', '^', 'D', 'v', '<', '>', 'p', '*', 'h']
     
-    # Add formula annotations
+    # Add formula annotations with proper mathematical notation
     formula1 = r"$\text{Normalized Hit Rate} = \frac{\text{Hit Rate}_{\text{degree}}}{\text{Hit Rate}_{\text{baseline}}}$"
     formula2 = r"$\text{Prefetch Accuracy} = \frac{\text{Prefetch Hits}}{\text{Total Prefetches}}$"
     
@@ -443,12 +450,13 @@ def create_combined_cache_metrics_plot(df, output_folder):
     if 'normalized_hit_rate' in normalized_df.columns:
         for i, benchmark in enumerate(benchmarks):
             benchmark_data = normalized_df[(normalized_df['benchmark'] == benchmark) & 
-                                         (~normalized_df['normalized_hit_rate'].isna())]
+                                        (~normalized_df['normalized_hit_rate'].isna())]
             
             if benchmark_data.empty:
                 continue
-                
+            
             # Map degrees to positions for equal spacing
+            benchmark_data = benchmark_data.sort_values('prefetch_degree')
             x_vals = [degree_to_position[degree] for degree in benchmark_data['prefetch_degree']]
             
             ax1.plot(x_vals, benchmark_data['normalized_hit_rate'], 
@@ -463,13 +471,13 @@ def create_combined_cache_metrics_plot(df, output_folder):
     ax1.grid(True, linestyle='--', alpha=0.7)
     ax1.axhline(y=1, color='r', linestyle='--', alpha=0.7)
     
-    # Set x-ticks to use prefetch degree values
+    # Set x-ticks to use evenly spaced positions with degree labels
     ax1.set_xticks(x_positions)
     ax1.set_xticklabels([str(int(degree)) for degree in distinct_degrees])
     
-    # Add formula annotation
-    ax1.text(0.5, -0.2, formula1, transform=ax1.transAxes, 
-             horizontalalignment='center', fontsize=10)
+    # Add formula annotation with proper math notation and more space
+    ax1.text(0.5, -0.35, formula1, transform=ax1.transAxes, 
+            horizontalalignment='center', fontsize=10)
     
     # Panel 2: Prefetch Accuracy (original values, not normalized)
     # Filter out degree 0 which has no prefetching
@@ -477,23 +485,16 @@ def create_combined_cache_metrics_plot(df, output_folder):
     
     for i, benchmark in enumerate(benchmarks):
         benchmark_data = df_with_prefetch[(df_with_prefetch['benchmark'] == benchmark) & 
-                                       (~df_with_prefetch['prefetch_accuracy'].isna())]
+                                      (~df_with_prefetch['prefetch_accuracy'].isna())]
         
         if benchmark_data.empty:
             continue
-            
+        
         # Map degrees to positions for equal spacing
+        benchmark_data = benchmark_data.sort_values('prefetch_degree')
         x_vals = [degree_to_position[degree] for degree in benchmark_data['prefetch_degree']]
         
-        # Filter out positions that don't exist in x_positions (for baseline)
-        valid_indices = [i for i, x in enumerate(x_vals) if x in x_positions]
-        if not valid_indices:
-            continue
-            
-        x_vals = [x_vals[i] for i in valid_indices]
-        y_vals = [benchmark_data['prefetch_accuracy'].iloc[i] for i in valid_indices]
-        
-        ax2.plot(x_vals, y_vals, 
+        ax2.plot(x_vals, benchmark_data['prefetch_accuracy'], 
                 marker=markers[i % len(markers)], 
                 label=benchmark, 
                 linewidth=1.5, 
@@ -504,21 +505,21 @@ def create_combined_cache_metrics_plot(df, output_folder):
     ax2.set_ylabel('Prefetch Accuracy')
     ax2.grid(True, linestyle='--', alpha=0.7)
     
-    # Set x-ticks to use prefetch degree values
-    ax2.set_xticks(x_positions)
-    ax2.set_xticklabels([str(int(degree)) for degree in distinct_degrees])
+    # Set x-ticks for prefetch degrees (excluding 0 for panel 2)
+    ax2.set_xticks(prefetch_positions)
+    ax2.set_xticklabels([str(int(degree)) for degree in prefetch_degrees])
     
-    # Add formula annotation
-    ax2.text(0.5, -0.2, formula2, transform=ax2.transAxes, 
-             horizontalalignment='center', fontsize=10)
+    # Add formula annotation with proper math notation and more space
+    ax2.text(0.5, -0.35, formula2, transform=ax2.transAxes, 
+            horizontalalignment='center', fontsize=10)
     
-    # Create a single legend for both panels
+    # Create a single legend for both panels positioned closer to the graph
     handles, labels = ax1.get_legend_handles_labels()
-    fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5, 0.05),
+    fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5, 0.3),
               fancybox=True, shadow=True, ncol=min(5, len(benchmarks)))
     
     # Adjust layout
-    plt.tight_layout(rect=[0, 0.1, 1, 0.95])
+    plt.tight_layout(rect=[0, 0.15, 1, 0.95])
     
     # Save as PNG only with high DPI for quality
     plt.savefig(os.path.join(output_folder, 'combined_cache_metrics.png'), dpi=300, bbox_inches='tight', pad_inches=0.05)
@@ -578,6 +579,7 @@ def create_speedup_miss_reduction_plot(df, all_results, output_folder):
     
     # Create a 2-panel figure
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
+    fig.subplots_adjust(left=0.05, right=0.95, top=0.9, bottom=0.25, wspace=0.2)
     
     # Get all unique prefetch degrees across both metrics
     all_degrees = set()
@@ -586,6 +588,7 @@ def create_speedup_miss_reduction_plot(df, all_results, output_folder):
     if reduction_df is not None:
         all_degrees.update(reduction_df['prefetch_degree'].unique())
     
+    # Create uniform x-axis positions
     distinct_degrees = sorted(all_degrees)
     x_positions = list(range(len(distinct_degrees)))
     degree_to_position = dict(zip(distinct_degrees, x_positions))
@@ -600,9 +603,9 @@ def create_speedup_miss_reduction_plot(df, all_results, output_folder):
     benchmarks = sorted(all_benchmarks)
     markers = ['o', 's', '^', 'D', 'v', '<', '>', 'p', '*', 'h']
     
-    # Add formula annotations
-    formula1 = "Speedup = Exec. Time(baseline) / Exec. Time(degree)"
-    formula2 = "Miss Reduction(%) = (Misses(baseline) - Misses(degree)) / Misses(baseline) × 100"
+    # Add formula annotations with proper mathematical notation
+    formula1 = r"$\text{Speedup} = \frac{\text{Exec. Time}_{\text{baseline}}}{\text{Exec. Time}_{\text{degree}}}$"
+    formula2 = r"$\text{Miss Reduction(\%)} = \frac{\text{Misses}_{\text{baseline}} - \text{Misses}_{\text{degree}}}{\text{Misses}_{\text{baseline}}} \times 100$"
     
     # Panel 1: Speedup
     if speedup_df is not None:
@@ -611,8 +614,9 @@ def create_speedup_miss_reduction_plot(df, all_results, output_folder):
             
             if benchmark_data.empty:
                 continue
-                
+            
             # Map degrees to positions for equal spacing
+            benchmark_data = benchmark_data.sort_values('prefetch_degree')
             x_vals = [degree_to_position[degree] for degree in benchmark_data['prefetch_degree']]
             
             ax1.plot(x_vals, benchmark_data['speedup'], 
@@ -627,13 +631,13 @@ def create_speedup_miss_reduction_plot(df, all_results, output_folder):
     ax1.grid(True, linestyle='--', alpha=0.7)
     ax1.axhline(y=1, color='r', linestyle='--', alpha=0.7)
     
-    # Set x-ticks to use prefetch degree values
+    # Set x-ticks to use evenly spaced positions with degree labels
     ax1.set_xticks(x_positions)
     ax1.set_xticklabels([str(int(degree)) for degree in distinct_degrees])
     
-    # Add formula annotation
-    ax1.text(0.5, -0.2, formula1, transform=ax1.transAxes, 
-             horizontalalignment='center', fontsize=10)
+    # Add formula annotation with proper math notation and more space
+    ax1.text(0.5, -0.35, formula1, transform=ax1.transAxes, 
+            horizontalalignment='center', fontsize=10)
     
     # Panel 2: Miss Reduction
     if reduction_df is not None:
@@ -642,8 +646,9 @@ def create_speedup_miss_reduction_plot(df, all_results, output_folder):
             
             if benchmark_data.empty:
                 continue
-                
+            
             # Map degrees to positions for equal spacing
+            benchmark_data = benchmark_data.sort_values('prefetch_degree')
             x_vals = [degree_to_position[degree] for degree in benchmark_data['prefetch_degree']]
             
             ax2.plot(x_vals, benchmark_data['miss_reduction'], 
@@ -657,21 +662,21 @@ def create_speedup_miss_reduction_plot(df, all_results, output_folder):
     ax2.set_ylabel('Miss Reduction (%)')
     ax2.grid(True, linestyle='--', alpha=0.7)
     
-    # Set x-ticks to use prefetch degree values
+    # Set x-ticks to use evenly spaced positions with degree labels
     ax2.set_xticks(x_positions)
     ax2.set_xticklabels([str(int(degree)) for degree in distinct_degrees])
     
-    # Add formula annotation
-    ax2.text(0.5, -0.2, formula2, transform=ax2.transAxes, 
-             horizontalalignment='center', fontsize=10)
+    # Add formula annotation with proper math notation and more space
+    ax2.text(0.5, -0.35, formula2, transform=ax2.transAxes, 
+            horizontalalignment='center', fontsize=10)
     
-    # Create a single legend for both panels
+    # Create a single legend for both panels positioned closer to the graph
     handles, labels = ax1.get_legend_handles_labels()
-    fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5, 0.05),
+    fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5, 0.3),
               fancybox=True, shadow=True, ncol=min(5, len(benchmarks)))
     
     # Adjust layout
-    plt.tight_layout(rect=[0, 0.1, 1, 0.95])
+    plt.tight_layout(rect=[0, 0.15, 1, 0.95])
     
     # Save as PNG only with high DPI for quality
     plt.savefig(os.path.join(output_folder, 'speedup_miss_reduction.png'), dpi=300, bbox_inches='tight', pad_inches=0.05)
