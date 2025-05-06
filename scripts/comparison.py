@@ -358,7 +358,7 @@ def load_files_by_path(file1_path, file2_path):
 
 # Set the paths to your CSV files here
 file1_path = "/home/abhinav/btp/mgpusim/scripts/normal/matrixmultiplication/metrics.csv"  # Replace if needed
-file2_path = "/home/abhinav/btp/mgpusim/scripts/normal/matrixmultiplication/1.csv"  # Replace if needed
+file2_path = "/home/abhinav/btp/mgpusim/scripts/normal/matrixmultiplication/8.csv"  # Replace if needed
 
 # Run the analysis
 load_files_by_path(file1_path, file2_path)
