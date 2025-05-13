@@ -1,0 +1,1168 @@
+map[AccessHistogram:map[0:0 1:0 10:0 11-20:0 2:0 21-30:0 3:0 31-40:0 4:0 41-50:0 5:0 51-60:0 6:0 61-70:0 7:0 71-80:0 8:0 81-90:0 9:0 91-100:0] TotalEvictions:0]
+map[AccessHistogram:map[0:0 1:0 10:0 11-20:0 2:0 21-30:0 3:0 31-40:0 4:0 41-50:0 5:0 51-60:0 6:0 61-70:0 7:0 71-80:0 8:0 81-90:0 9:0 91-100:0] TotalEvictions:0]
+map[AccessHistogram:map[0:0 1:0 10:0 11-20:0 2:0 21-30:0 3:0 31-40:0 4:0 41-50:0 5:0 51-60:0 6:0 61-70:0 7:0 71-80:0 8:0 81-90:0 9:0 91-100:0] TotalEvictions:0]
+map[AccessHistogram:map[0:0 1:0 10:0 11-20:0 2:0 21-30:0 3:0 31-40:0 4:0 41-50:0 5:0 51-60:0 6:0 61-70:0 7:0 71-80:0 8:0 81-90:0 9:0 91-100:0] TotalEvictions:0]
+map[AccessHistogram:map[0:0 1:0 10:0 11-20:0 2:0 21-30:0 3:0 31-40:0 4:0 41-50:0 5:0 51-60:0 6:0 61-70:0 7:0 71-80:0 8:0 81-90:0 9:0 91-100:0] TotalEvictions:0]
+map[AccessHistogram:map[0:0 1:0 10:0 11-20:0 2:0 21-30:0 3:0 31-40:0 4:0 41-50:0 5:0 51-60:0 6:0 61-70:0 7:0 71-80:0 8:0 81-90:0 9:0 91-100:0] TotalEvictions:0]
+map[AccessHistogram:map[0:0 1:0 10:0 11-20:0 2:0 21-30:0 3:0 31-40:0 4:0 41-50:0 5:0 51-60:0 6:0 61-70:0 7:0 71-80:0 8:0 81-90:0 9:0 91-100:0] TotalEvictions:0]
+map[AccessHistogram:map[0:0 1:0 10:0 11-20:0 2:0 21-30:0 3:0 31-40:0 4:0 41-50:0 5:0 51-60:0 6:0 61-70:0 7:0 71-80:0 8:0 81-90:0 9:0 91-100:0] TotalEvictions:0]
+map[AccessHistogram:map[0:0 1:0 10:0 11-20:0 2:0 21-30:0 3:0 31-40:0 4:0 41-50:0 5:0 51-60:0 6:0 61-70:0 7:0 71-80:0 8:0 81-90:0 9:0 91-100:0] TotalEvictions:0]
+map[AccessHistogram:map[0:0 1:0 10:0 11-20:0 2:0 21-30:0 3:0 31-40:0 4:0 41-50:0 5:0 51-60:0 6:0 61-70:0 7:0 71-80:0 8:0 81-90:0 9:0 91-100:0] TotalEvictions:0]
+map[AccessHistogram:map[0:0 1:0 10:0 11-20:0 2:0 21-30:0 3:0 31-40:0 4:0 41-50:0 5:0 51-60:0 6:0 61-70:0 7:0 71-80:0 8:0 81-90:0 9:0 91-100:0] TotalEvictions:0]
+map[AccessHistogram:map[0:0 1:0 10:0 11-20:0 2:0 21-30:0 3:0 31-40:0 4:0 41-50:0 5:0 51-60:0 6:0 61-70:0 7:0 71-80:0 8:0 81-90:0 9:0 91-100:0] TotalEvictions:0]
+map[AccessHistogram:map[0:0 1:0 10:0 11-20:0 2:0 21-30:0 3:0 31-40:0 4:0 41-50:0 5:0 51-60:0 6:0 61-70:0 7:0 71-80:0 8:0 81-90:0 9:0 91-100:0] TotalEvictions:0]
+map[AccessHistogram:map[0:0 1:0 10:0 11-20:0 2:0 21-30:0 3:0 31-40:0 4:0 41-50:0 5:0 51-60:0 6:0 61-70:0 7:0 71-80:0 8:0 81-90:0 9:0 91-100:0] TotalEvictions:0]
+map[AccessHistogram:map[0:0 1:0 10:0 11-20:0 2:0 21-30:0 3:0 31-40:0 4:0 41-50:0 5:0 51-60:0 6:0 61-70:0 7:0 71-80:0 8:0 81-90:0 9:0 91-100:0] TotalEvictions:0]
+map[AccessHistogram:map[0:0 1:0 10:0 11-20:0 2:0 21-30:0 3:0 31-40:0 4:0 41-50:0 5:0 51-60:0 6:0 61-70:0 7:0 71-80:0 8:0 81-90:0 9:0 91-100:0] TotalEvictions:0]
+Prefetcher Report for GPU[1].SA[0].L1VCache[0]:
+  Degree: 8
+  Prefetch Hits: 44
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 112
+  Issued Prefetches: 82
+  Completed Prefetches: 82
+  Blocks Still in Cache: 38
+  Prefetch Accuracy: 53.66%
+  Issue Success Rate: 73.21%
+  Prefetch Utilization: 53.66%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 30
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[0].L1VCache[1]:
+  Degree: 8
+  Prefetch Hits: 62
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 104
+  Issued Prefetches: 82
+  Completed Prefetches: 82
+  Blocks Still in Cache: 20
+  Prefetch Accuracy: 75.61%
+  Issue Success Rate: 78.85%
+  Prefetch Utilization: 75.61%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 22
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[0].L1VCache[2]:
+  Degree: 8
+  Prefetch Hits: 68
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 120
+  Issued Prefetches: 98
+  Completed Prefetches: 98
+  Blocks Still in Cache: 30
+  Prefetch Accuracy: 69.39%
+  Issue Success Rate: 81.67%
+  Prefetch Utilization: 69.39%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 22
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[0].L1VCache[3]:
+  Degree: 8
+  Prefetch Hits: 62
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 128
+  Issued Prefetches: 86
+  Completed Prefetches: 86
+  Blocks Still in Cache: 24
+  Prefetch Accuracy: 72.09%
+  Issue Success Rate: 67.19%
+  Prefetch Utilization: 72.09%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 42
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[1].L1VCache[0]:
+  Degree: 8
+  Prefetch Hits: 50
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 80
+  Issued Prefetches: 66
+  Completed Prefetches: 66
+  Blocks Still in Cache: 16
+  Prefetch Accuracy: 75.76%
+  Issue Success Rate: 82.50%
+  Prefetch Utilization: 75.76%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 14
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[1].L1VCache[1]:
+  Degree: 8
+  Prefetch Hits: 82
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 128
+  Issued Prefetches: 118
+  Completed Prefetches: 118
+  Blocks Still in Cache: 36
+  Prefetch Accuracy: 69.49%
+  Issue Success Rate: 92.19%
+  Prefetch Utilization: 69.49%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 10
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[1].L1VCache[2]:
+  Degree: 8
+  Prefetch Hits: 46
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 80
+  Issued Prefetches: 62
+  Completed Prefetches: 62
+  Blocks Still in Cache: 16
+  Prefetch Accuracy: 74.19%
+  Issue Success Rate: 77.50%
+  Prefetch Utilization: 74.19%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 18
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[1].L1VCache[3]:
+  Degree: 8
+  Prefetch Hits: 36
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 88
+  Issued Prefetches: 66
+  Completed Prefetches: 66
+  Blocks Still in Cache: 30
+  Prefetch Accuracy: 54.55%
+  Issue Success Rate: 75.00%
+  Prefetch Utilization: 54.55%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 22
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[2].L1VCache[0]:
+  Degree: 8
+  Prefetch Hits: 70
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 120
+  Issued Prefetches: 90
+  Completed Prefetches: 90
+  Blocks Still in Cache: 20
+  Prefetch Accuracy: 77.78%
+  Issue Success Rate: 75.00%
+  Prefetch Utilization: 77.78%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 30
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[2].L1VCache[1]:
+  Degree: 8
+  Prefetch Hits: 42
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 56
+  Issued Prefetches: 46
+  Completed Prefetches: 46
+  Blocks Still in Cache: 4
+  Prefetch Accuracy: 91.30%
+  Issue Success Rate: 82.14%
+  Prefetch Utilization: 91.30%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 10
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[2].L1VCache[2]:
+  Degree: 8
+  Prefetch Hits: 52
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 88
+  Issued Prefetches: 70
+  Completed Prefetches: 70
+  Blocks Still in Cache: 18
+  Prefetch Accuracy: 74.29%
+  Issue Success Rate: 79.55%
+  Prefetch Utilization: 74.29%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 18
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[2].L1VCache[3]:
+  Degree: 8
+  Prefetch Hits: 48
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 112
+  Issued Prefetches: 74
+  Completed Prefetches: 74
+  Blocks Still in Cache: 26
+  Prefetch Accuracy: 64.86%
+  Issue Success Rate: 66.07%
+  Prefetch Utilization: 64.86%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 38
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[3].L1VCache[0]:
+  Degree: 8
+  Prefetch Hits: 50
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 80
+  Issued Prefetches: 76
+  Completed Prefetches: 76
+  Blocks Still in Cache: 26
+  Prefetch Accuracy: 65.79%
+  Issue Success Rate: 95.00%
+  Prefetch Utilization: 65.79%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 4
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[3].L1VCache[1]:
+  Degree: 8
+  Prefetch Hits: 70
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 128
+  Issued Prefetches: 96
+  Completed Prefetches: 96
+  Blocks Still in Cache: 26
+  Prefetch Accuracy: 72.92%
+  Issue Success Rate: 75.00%
+  Prefetch Utilization: 72.92%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 32
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[3].L1VCache[2]:
+  Degree: 8
+  Prefetch Hits: 48
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 88
+  Issued Prefetches: 66
+  Completed Prefetches: 66
+  Blocks Still in Cache: 18
+  Prefetch Accuracy: 72.73%
+  Issue Success Rate: 75.00%
+  Prefetch Utilization: 72.73%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 22
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[3].L1VCache[3]:
+  Degree: 8
+  Prefetch Hits: 44
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 80
+  Issued Prefetches: 52
+  Completed Prefetches: 52
+  Blocks Still in Cache: 8
+  Prefetch Accuracy: 84.62%
+  Issue Success Rate: 65.00%
+  Prefetch Utilization: 84.62%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 28
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[4].L1VCache[0]:
+  Degree: 8
+  Prefetch Hits: 46
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 80
+  Issued Prefetches: 62
+  Completed Prefetches: 62
+  Blocks Still in Cache: 16
+  Prefetch Accuracy: 74.19%
+  Issue Success Rate: 77.50%
+  Prefetch Utilization: 74.19%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 18
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[4].L1VCache[1]:
+  Degree: 8
+  Prefetch Hits: 46
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 80
+  Issued Prefetches: 66
+  Completed Prefetches: 66
+  Blocks Still in Cache: 20
+  Prefetch Accuracy: 69.70%
+  Issue Success Rate: 82.50%
+  Prefetch Utilization: 69.70%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 14
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[4].L1VCache[2]:
+  Degree: 8
+  Prefetch Hits: 56
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 104
+  Issued Prefetches: 74
+  Completed Prefetches: 74
+  Blocks Still in Cache: 18
+  Prefetch Accuracy: 75.68%
+  Issue Success Rate: 71.15%
+  Prefetch Utilization: 75.68%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 30
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[4].L1VCache[3]:
+  Degree: 8
+  Prefetch Hits: 52
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 88
+  Issued Prefetches: 74
+  Completed Prefetches: 74
+  Blocks Still in Cache: 22
+  Prefetch Accuracy: 70.27%
+  Issue Success Rate: 84.09%
+  Prefetch Utilization: 70.27%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 14
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[5].L1VCache[0]:
+  Degree: 8
+  Prefetch Hits: 44
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 64
+  Issued Prefetches: 50
+  Completed Prefetches: 50
+  Blocks Still in Cache: 6
+  Prefetch Accuracy: 88.00%
+  Issue Success Rate: 78.12%
+  Prefetch Utilization: 88.00%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 14
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[5].L1VCache[1]:
+  Degree: 8
+  Prefetch Hits: 42
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 80
+  Issued Prefetches: 64
+  Completed Prefetches: 64
+  Blocks Still in Cache: 22
+  Prefetch Accuracy: 65.62%
+  Issue Success Rate: 80.00%
+  Prefetch Utilization: 65.62%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 16
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[5].L1VCache[2]:
+  Degree: 8
+  Prefetch Hits: 49
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 96
+  Issued Prefetches: 62
+  Completed Prefetches: 62
+  Blocks Still in Cache: 13
+  Prefetch Accuracy: 79.03%
+  Issue Success Rate: 64.58%
+  Prefetch Utilization: 79.03%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 34
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[5].L1VCache[3]:
+  Degree: 8
+  Prefetch Hits: 54
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 120
+  Issued Prefetches: 86
+  Completed Prefetches: 86
+  Blocks Still in Cache: 32
+  Prefetch Accuracy: 62.79%
+  Issue Success Rate: 71.67%
+  Prefetch Utilization: 62.79%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 34
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[6].L1VCache[0]:
+  Degree: 8
+  Prefetch Hits: 44
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 112
+  Issued Prefetches: 76
+  Completed Prefetches: 76
+  Blocks Still in Cache: 32
+  Prefetch Accuracy: 57.89%
+  Issue Success Rate: 67.86%
+  Prefetch Utilization: 57.89%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 36
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[6].L1VCache[1]:
+  Degree: 8
+  Prefetch Hits: 64
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 112
+  Issued Prefetches: 90
+  Completed Prefetches: 90
+  Blocks Still in Cache: 26
+  Prefetch Accuracy: 71.11%
+  Issue Success Rate: 80.36%
+  Prefetch Utilization: 71.11%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 22
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[6].L1VCache[2]:
+  Degree: 8
+  Prefetch Hits: 73
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 128
+  Issued Prefetches: 104
+  Completed Prefetches: 104
+  Blocks Still in Cache: 31
+  Prefetch Accuracy: 70.19%
+  Issue Success Rate: 81.25%
+  Prefetch Utilization: 70.19%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 24
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[6].L1VCache[3]:
+  Degree: 8
+  Prefetch Hits: 60
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 104
+  Issued Prefetches: 76
+  Completed Prefetches: 76
+  Blocks Still in Cache: 16
+  Prefetch Accuracy: 78.95%
+  Issue Success Rate: 73.08%
+  Prefetch Utilization: 78.95%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 28
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[7].L1VCache[0]:
+  Degree: 8
+  Prefetch Hits: 64
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 104
+  Issued Prefetches: 86
+  Completed Prefetches: 86
+  Blocks Still in Cache: 22
+  Prefetch Accuracy: 74.42%
+  Issue Success Rate: 82.69%
+  Prefetch Utilization: 74.42%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 18
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[7].L1VCache[1]:
+  Degree: 8
+  Prefetch Hits: 53
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 96
+  Issued Prefetches: 66
+  Completed Prefetches: 66
+  Blocks Still in Cache: 13
+  Prefetch Accuracy: 80.30%
+  Issue Success Rate: 68.75%
+  Prefetch Utilization: 80.30%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 30
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[7].L1VCache[2]:
+  Degree: 8
+  Prefetch Hits: 52
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 96
+  Issued Prefetches: 68
+  Completed Prefetches: 68
+  Blocks Still in Cache: 16
+  Prefetch Accuracy: 76.47%
+  Issue Success Rate: 70.83%
+  Prefetch Utilization: 76.47%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 28
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[7].L1VCache[3]:
+  Degree: 8
+  Prefetch Hits: 56
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 104
+  Issued Prefetches: 70
+  Completed Prefetches: 70
+  Blocks Still in Cache: 14
+  Prefetch Accuracy: 80.00%
+  Issue Success Rate: 67.31%
+  Prefetch Utilization: 80.00%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 34
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[8].L1VCache[0]:
+  Degree: 8
+  Prefetch Hits: 68
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 104
+  Issued Prefetches: 84
+  Completed Prefetches: 84
+  Blocks Still in Cache: 16
+  Prefetch Accuracy: 80.95%
+  Issue Success Rate: 80.77%
+  Prefetch Utilization: 80.95%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 20
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[8].L1VCache[1]:
+  Degree: 8
+  Prefetch Hits: 84
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 152
+  Issued Prefetches: 128
+  Completed Prefetches: 128
+  Blocks Still in Cache: 44
+  Prefetch Accuracy: 65.62%
+  Issue Success Rate: 84.21%
+  Prefetch Utilization: 65.62%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 24
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[8].L1VCache[2]:
+  Degree: 8
+  Prefetch Hits: 74
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 96
+  Issued Prefetches: 88
+  Completed Prefetches: 88
+  Blocks Still in Cache: 14
+  Prefetch Accuracy: 84.09%
+  Issue Success Rate: 91.67%
+  Prefetch Utilization: 84.09%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 8
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[8].L1VCache[3]:
+  Degree: 8
+  Prefetch Hits: 52
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 72
+  Issued Prefetches: 68
+  Completed Prefetches: 68
+  Blocks Still in Cache: 16
+  Prefetch Accuracy: 76.47%
+  Issue Success Rate: 94.44%
+  Prefetch Utilization: 76.47%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 4
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[9].L1VCache[0]:
+  Degree: 8
+  Prefetch Hits: 56
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 104
+  Issued Prefetches: 82
+  Completed Prefetches: 82
+  Blocks Still in Cache: 26
+  Prefetch Accuracy: 68.29%
+  Issue Success Rate: 78.85%
+  Prefetch Utilization: 68.29%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 20
+    MSHR Full: 2
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[9].L1VCache[1]:
+  Degree: 8
+  Prefetch Hits: 66
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 120
+  Issued Prefetches: 94
+  Completed Prefetches: 94
+  Blocks Still in Cache: 28
+  Prefetch Accuracy: 70.21%
+  Issue Success Rate: 78.33%
+  Prefetch Utilization: 70.21%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 26
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[9].L1VCache[2]:
+  Degree: 8
+  Prefetch Hits: 72
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 136
+  Issued Prefetches: 106
+  Completed Prefetches: 106
+  Blocks Still in Cache: 34
+  Prefetch Accuracy: 67.92%
+  Issue Success Rate: 77.94%
+  Prefetch Utilization: 67.92%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 30
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[9].L1VCache[3]:
+  Degree: 8
+  Prefetch Hits: 50
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 120
+  Issued Prefetches: 86
+  Completed Prefetches: 86
+  Blocks Still in Cache: 36
+  Prefetch Accuracy: 58.14%
+  Issue Success Rate: 71.67%
+  Prefetch Utilization: 58.14%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 34
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[10].L1VCache[0]:
+  Degree: 8
+  Prefetch Hits: 94
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 128
+  Issued Prefetches: 110
+  Completed Prefetches: 110
+  Blocks Still in Cache: 16
+  Prefetch Accuracy: 85.45%
+  Issue Success Rate: 85.94%
+  Prefetch Utilization: 85.45%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 18
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[10].L1VCache[1]:
+  Degree: 8
+  Prefetch Hits: 54
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 112
+  Issued Prefetches: 86
+  Completed Prefetches: 86
+  Blocks Still in Cache: 32
+  Prefetch Accuracy: 62.79%
+  Issue Success Rate: 76.79%
+  Prefetch Utilization: 62.79%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 26
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[10].L1VCache[2]:
+  Degree: 8
+  Prefetch Hits: 64
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 112
+  Issued Prefetches: 84
+  Completed Prefetches: 84
+  Blocks Still in Cache: 20
+  Prefetch Accuracy: 76.19%
+  Issue Success Rate: 75.00%
+  Prefetch Utilization: 76.19%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 28
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[10].L1VCache[3]:
+  Degree: 8
+  Prefetch Hits: 42
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 72
+  Issued Prefetches: 66
+  Completed Prefetches: 66
+  Blocks Still in Cache: 24
+  Prefetch Accuracy: 63.64%
+  Issue Success Rate: 91.67%
+  Prefetch Utilization: 63.64%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 6
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[11].L1VCache[0]:
+  Degree: 8
+  Prefetch Hits: 74
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 128
+  Issued Prefetches: 94
+  Completed Prefetches: 94
+  Blocks Still in Cache: 20
+  Prefetch Accuracy: 78.72%
+  Issue Success Rate: 73.44%
+  Prefetch Utilization: 78.72%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 34
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[11].L1VCache[1]:
+  Degree: 8
+  Prefetch Hits: 66
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 112
+  Issued Prefetches: 100
+  Completed Prefetches: 100
+  Blocks Still in Cache: 34
+  Prefetch Accuracy: 66.00%
+  Issue Success Rate: 89.29%
+  Prefetch Utilization: 66.00%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 12
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[11].L1VCache[2]:
+  Degree: 8
+  Prefetch Hits: 54
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 88
+  Issued Prefetches: 68
+  Completed Prefetches: 68
+  Blocks Still in Cache: 14
+  Prefetch Accuracy: 79.41%
+  Issue Success Rate: 77.27%
+  Prefetch Utilization: 79.41%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 20
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[11].L1VCache[3]:
+  Degree: 8
+  Prefetch Hits: 56
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 112
+  Issued Prefetches: 82
+  Completed Prefetches: 82
+  Blocks Still in Cache: 26
+  Prefetch Accuracy: 68.29%
+  Issue Success Rate: 73.21%
+  Prefetch Utilization: 68.29%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 30
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[12].L1VCache[0]:
+  Degree: 8
+  Prefetch Hits: 28
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 64
+  Issued Prefetches: 48
+  Completed Prefetches: 48
+  Blocks Still in Cache: 20
+  Prefetch Accuracy: 58.33%
+  Issue Success Rate: 75.00%
+  Prefetch Utilization: 58.33%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 16
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[12].L1VCache[1]:
+  Degree: 8
+  Prefetch Hits: 66
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 104
+  Issued Prefetches: 86
+  Completed Prefetches: 86
+  Blocks Still in Cache: 20
+  Prefetch Accuracy: 76.74%
+  Issue Success Rate: 82.69%
+  Prefetch Utilization: 76.74%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 18
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[12].L1VCache[2]:
+  Degree: 8
+  Prefetch Hits: 44
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 72
+  Issued Prefetches: 52
+  Completed Prefetches: 52
+  Blocks Still in Cache: 8
+  Prefetch Accuracy: 84.62%
+  Issue Success Rate: 72.22%
+  Prefetch Utilization: 84.62%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 20
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[12].L1VCache[3]:
+  Degree: 8
+  Prefetch Hits: 72
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 112
+  Issued Prefetches: 102
+  Completed Prefetches: 102
+  Blocks Still in Cache: 30
+  Prefetch Accuracy: 70.59%
+  Issue Success Rate: 91.07%
+  Prefetch Utilization: 70.59%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 10
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[13].L1VCache[0]:
+  Degree: 8
+  Prefetch Hits: 56
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 144
+  Issued Prefetches: 98
+  Completed Prefetches: 98
+  Blocks Still in Cache: 42
+  Prefetch Accuracy: 57.14%
+  Issue Success Rate: 68.06%
+  Prefetch Utilization: 57.14%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 46
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[13].L1VCache[1]:
+  Degree: 8
+  Prefetch Hits: 50
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 88
+  Issued Prefetches: 62
+  Completed Prefetches: 62
+  Blocks Still in Cache: 12
+  Prefetch Accuracy: 80.65%
+  Issue Success Rate: 70.45%
+  Prefetch Utilization: 80.65%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 26
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[13].L1VCache[2]:
+  Degree: 8
+  Prefetch Hits: 66
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 120
+  Issued Prefetches: 98
+  Completed Prefetches: 98
+  Blocks Still in Cache: 32
+  Prefetch Accuracy: 67.35%
+  Issue Success Rate: 81.67%
+  Prefetch Utilization: 67.35%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 22
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[13].L1VCache[3]:
+  Degree: 8
+  Prefetch Hits: 52
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 120
+  Issued Prefetches: 86
+  Completed Prefetches: 86
+  Blocks Still in Cache: 34
+  Prefetch Accuracy: 60.47%
+  Issue Success Rate: 71.67%
+  Prefetch Utilization: 60.47%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 32
+    MSHR Full: 2
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[14].L1VCache[0]:
+  Degree: 8
+  Prefetch Hits: 48
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 112
+  Issued Prefetches: 76
+  Completed Prefetches: 76
+  Blocks Still in Cache: 28
+  Prefetch Accuracy: 63.16%
+  Issue Success Rate: 67.86%
+  Prefetch Utilization: 63.16%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 36
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[14].L1VCache[1]:
+  Degree: 8
+  Prefetch Hits: 46
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 88
+  Issued Prefetches: 58
+  Completed Prefetches: 58
+  Blocks Still in Cache: 12
+  Prefetch Accuracy: 79.31%
+  Issue Success Rate: 65.91%
+  Prefetch Utilization: 79.31%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 30
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[14].L1VCache[2]:
+  Degree: 8
+  Prefetch Hits: 60
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 112
+  Issued Prefetches: 82
+  Completed Prefetches: 82
+  Blocks Still in Cache: 22
+  Prefetch Accuracy: 73.17%
+  Issue Success Rate: 73.21%
+  Prefetch Utilization: 73.17%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 30
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[14].L1VCache[3]:
+  Degree: 8
+  Prefetch Hits: 76
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 112
+  Issued Prefetches: 98
+  Completed Prefetches: 98
+  Blocks Still in Cache: 22
+  Prefetch Accuracy: 77.55%
+  Issue Success Rate: 87.50%
+  Prefetch Utilization: 77.55%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 12
+    MSHR Full: 2
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[15].L1VCache[0]:
+  Degree: 8
+  Prefetch Hits: 77
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 136
+  Issued Prefetches: 99
+  Completed Prefetches: 99
+  Blocks Still in Cache: 22
+  Prefetch Accuracy: 77.78%
+  Issue Success Rate: 72.79%
+  Prefetch Utilization: 77.78%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 34
+    MSHR Full: 3
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[15].L1VCache[1]:
+  Degree: 8
+  Prefetch Hits: 48
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 96
+  Issued Prefetches: 78
+  Completed Prefetches: 78
+  Blocks Still in Cache: 30
+  Prefetch Accuracy: 61.54%
+  Issue Success Rate: 81.25%
+  Prefetch Utilization: 61.54%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 18
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[15].L1VCache[2]:
+  Degree: 8
+  Prefetch Hits: 66
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 144
+  Issued Prefetches: 94
+  Completed Prefetches: 94
+  Blocks Still in Cache: 28
+  Prefetch Accuracy: 70.21%
+  Issue Success Rate: 65.28%
+  Prefetch Utilization: 70.21%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 50
+    MSHR Full: 0
+    Locked Blocks: 0
+    Send Errors: 0
+
+Prefetcher Report for GPU[1].SA[15].L1VCache[3]:
+  Degree: 8
+  Prefetch Hits: 59
+  Prefetch Misses: 0
+  Total Prefetch Attempts: 120
+  Issued Prefetches: 89
+  Completed Prefetches: 89
+  Blocks Still in Cache: 30
+  Prefetch Accuracy: 66.29%
+  Issue Success Rate: 74.17%
+  Prefetch Utilization: 66.29%
+  Failure Breakdown:
+    MSHR Collisions: 0
+    Already in Cache: 29
+    MSHR Full: 2
+    Locked Blocks: 0
+    Send Errors: 0
+

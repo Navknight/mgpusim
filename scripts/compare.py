@@ -24,11 +24,23 @@ plt.rcParams['xtick.labelsize'] = 10
 plt.rcParams['ytick.labelsize'] = 10
 plt.rcParams['legend.fontsize'] = 12  # Increased legend font size
 
-# Set a better grayscale-friendly style
-plt.rcParams['axes.prop_cycle'] = plt.cycler(color=['k', '0.2', '0.4', '0.6', '0.8']) 
-# Use different line styles and markers for better black and white distinction
+# Set a better grayscale-friendly style with high contrast
+plt.rcParams['axes.prop_cycle'] = plt.cycler(color=['k', '0.3', '0.5', '0.7', '0.9']) 
+# Define distinct line styles and markers for better black and white distinction
 line_styles = ['-', '--', '-.', ':', '-']
 marker_styles = ['o', 's', '^', 'D', 'v', '<', '>', 'p', '*', 'h']
+
+# Function to get distinct visual elements for each dataset
+def get_style_elements(index, num_elements):
+    """
+    Returns distinct style elements (color, line style, marker) for clear differentiation in black and white.
+    """
+    color_idx = index % 5  # We have 5 grayscale colors
+    line_idx = index % len(line_styles)
+    marker_idx = index % len(marker_styles)
+    
+    colors = ['k', '0.3', '0.5', '0.7', '0.9']
+    return colors[color_idx], line_styles[line_idx], marker_styles[marker_idx]
 
 # Set style with minimal elements
 sns.set_style("ticks")
@@ -117,6 +129,33 @@ def analyze_prefetch_metrics(df):
     # As per user feedback, utilization and accuracy are the same thing
     # Just get one of them (prefetch accuracy)
     metrics['prefetch_accuracy'] = extract_metric('prefetch-accuracy')
+    
+    # Extract L1V cache latency
+    # First try exact match for L1V cache latency
+    l1v_latency_rows = df[(df['where'].str.contains('L1V')) & 
+                          (df['what'].str.contains('req_average_latency'))]
+    
+    # If not found, try more general search for any vector cache latency
+    if l1v_latency_rows.empty:
+        l1v_latency_rows = df[(df['where'].str.contains('L1V') | df['where'].str.contains('VCache')) & 
+                              (df['what'].str.contains('req_average_latency'))]
+    
+    metrics['l1v_latency'] = l1v_latency_rows['value'].iloc[0] if not l1v_latency_rows.empty else None
+    
+    # Extract L2 cache latency
+    l2_latency_rows = df[(df['where'].str.contains('L2')) & 
+                         (df['what'].str.contains('req_average_latency'))]
+    
+    metrics['l2_latency'] = l2_latency_rows['value'].iloc[0] if not l2_latency_rows.empty else None
+    
+    # Extract CPI Stack Idle
+    cpi_idle_rows = df[(df['what'].str.contains('CPIStack.Idle', case=False))]
+    
+    # If not found with the exact pattern, try a more flexible search
+    if cpi_idle_rows.empty:
+        cpi_idle_rows = df[(df['what'].str.contains('CPI') & df['what'].str.contains('Idle', case=False))]
+        
+    metrics['cpi_stack_idle'] = cpi_idle_rows['value'].iloc[0] if not cpi_idle_rows.empty else None
     
     # Calculate additional metrics
     if metrics['read_hit'] is not None and metrics['read_miss'] is not None:
@@ -235,32 +274,34 @@ def create_comparison_plots(all_results, output_folder):
     
     df = pd.DataFrame(data_rows)
     
-    # Create a combined performance metrics plot
-    create_combined_performance_plot(df, output_folder)
+    # Create combined throughput and miss reduction plot
+    create_combined_throughput_miss_reduction_plot(df, all_results, output_folder)
     
     # Create a combined cache metrics plot
     create_combined_cache_metrics_plot(df, output_folder)
     
-    # Create speedup and miss reduction in one plot
-    create_speedup_miss_reduction_plot(df, all_results, output_folder)
+    # Create combined L1V and L2 cache latency plots (both normalized and absolute)
+    create_combined_latency_plot(df, output_folder)
+    create_combined_absolute_latency_plot(df, output_folder)
     
-    # Create summary data
-    create_summary_data(df, output_folder)
+    # Create CPI Stack Idle plot
+    create_cpi_stack_idle_plot(df, output_folder)
 
-def create_combined_performance_plot(df, output_folder):
+def create_combined_throughput_miss_reduction_plot(df, all_results, output_folder):
     """
-    Create a combined plot showing normalized throughput and execution time.
+    Create a combined plot showing normalized throughput and miss reduction side by side.
     
     Args:
         df (pandas.DataFrame): DataFrame containing results.
+        all_results (dict): Dictionary containing results for all benchmarks.
         output_folder (str): Path to save the output plot.
     """
-    # Prepare the data
+    # ---------- Prepare throughput data ----------
+    # Prepare the throughput data
     df['throughput_billions'] = df['throughput'] / 1e9
-    df['execution_time_ms'] = df['execution_time'] * 1000
     
-    # Create normalized data for each benchmark
-    normalized_data = []
+    # Create normalized throughput data for each benchmark
+    throughput_data = []
     
     for benchmark in df['benchmark'].unique():
         benchmark_df = df[df['benchmark'] == benchmark].copy()
@@ -271,104 +312,185 @@ def create_combined_performance_plot(df, output_folder):
         
         # Get baseline values for this benchmark
         baseline_throughput = benchmark_df[benchmark_df['prefetch_degree'] == 0]['throughput_billions'].iloc[0]
-        baseline_time = benchmark_df[benchmark_df['prefetch_degree'] == 0]['execution_time_ms'].iloc[0]
         
         # Normalize all values by the baseline
         benchmark_df['normalized_throughput'] = benchmark_df['throughput_billions'] / baseline_throughput
-        benchmark_df['normalized_execution_time'] = benchmark_df['execution_time_ms'] / baseline_time
         
-        normalized_data.append(benchmark_df)
+        throughput_data.append(benchmark_df)
     
-    if not normalized_data:
-        print("Warning: No data available for normalized plot.")
+    if not throughput_data:
+        print("Warning: No data available for normalized throughput plot.")
         return
     
-    # Combine all normalized data
-    normalized_df = pd.concat(normalized_data)
+    # Combine all normalized throughput data
+    throughput_df = pd.concat(throughput_data)
     
-    # Create a figure with minimal margins
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5), constrained_layout=True)
-    fig.subplots_adjust(left=0.05, right=0.95, top=0.9, bottom=0.25, wspace=0.2)
+    # ---------- Prepare miss reduction data ----------
+    # Create miss reduction data
+    reduction_data = []
     
-    # Create uniform x-axis positions
-    distinct_degrees = sorted(normalized_df['prefetch_degree'].unique())
-    x_positions = list(range(len(distinct_degrees)))
-    degree_to_position = dict(zip(distinct_degrees, x_positions))
+    for benchmark in df['benchmark'].unique():
+        benchmark_df = df[df['benchmark'] == benchmark]
+        
+        if 0 not in benchmark_df['prefetch_degree'].values:
+            print(f"Warning: No baseline (prefetch degree 0) found for benchmark '{benchmark}'. Skipping calculations.")
+            continue
+        
+        baseline_misses = benchmark_df[benchmark_df['prefetch_degree'] == 0]['read_miss'].iloc[0] if 'read_miss' in benchmark_df.columns else None
+        
+        if baseline_misses is None or pd.isna(baseline_misses) or baseline_misses == 0:
+            continue
+            
+        for _, row in benchmark_df.iterrows():
+            if row['prefetch_degree'] == 0:
+                continue  # Skip baseline
+            
+            # Miss reduction calculation (if data available)
+            if pd.notna(row['read_miss']):
+                reduction = ((baseline_misses - row['read_miss']) / baseline_misses) * 100
+                reduction_data.append({
+                    'benchmark': benchmark,
+                    'prefetch_degree': row['prefetch_degree'],
+                    'miss_reduction': reduction
+                })
     
-    # Prepare distinct markers and colors for different benchmarks
-    benchmarks = normalized_df['benchmark'].unique()
-    markers = ['o', 's', '^', 'D', 'v', '<', '>', 'p', '*', 'h']
+    # Create DataFrame for miss reduction
+    reduction_df = pd.DataFrame(reduction_data) if reduction_data else None
     
-    # Add formula annotations using proper mathematical notation
-    formula1 = r"$\text{Normalized Throughput} = \frac{\text{Throughput}_{\text{degree}}}{\text{Throughput}_{\text{baseline}}}$"
-    formula2 = r"$\text{Normalized Exec. Time} = \frac{\text{Exec. Time}_{\text{degree}}}{\text{Exec. Time}_{\text{baseline}}}$"
+    if reduction_df is None:
+        print("Warning: No data available for miss reduction plot.")
+        return
     
-    # Panel 1: Normalized Throughput
-    for i, benchmark in enumerate(benchmarks):
-        benchmark_data = normalized_df[normalized_df['benchmark'] == benchmark]
+    # ---------- Create the combined plot ----------
+    # Create a 2-panel figure with improved spacing and dimensions
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+    fig.subplots_adjust(wspace=0.25)  # Adjust space between panels
+    
+    # Get all unique benchmarks across both datasets
+    all_benchmarks = sorted(set(list(throughput_df['benchmark'].unique()) + 
+                         list(reduction_df['benchmark'].unique())))
+    num_benchmarks = len(all_benchmarks)
+    
+    # Create uniform x-axis positions for throughput plot
+    throughput_degrees = sorted(throughput_df['prefetch_degree'].unique())
+    throughput_x_positions = list(range(len(throughput_degrees)))
+    throughput_degree_to_position = dict(zip(throughput_degrees, throughput_x_positions))
+    
+    # Create uniform x-axis positions for miss reduction plot
+    reduction_degrees = sorted(reduction_df['prefetch_degree'].unique())
+    reduction_x_positions = list(range(len(reduction_degrees)))
+    reduction_degree_to_position = dict(zip(reduction_degrees, reduction_x_positions))
+    
+    # ---------- Panel 1: Normalized Throughput ----------
+    for i, benchmark in enumerate(all_benchmarks):
+        benchmark_data = throughput_df[throughput_df['benchmark'] == benchmark]
+        
+        if benchmark_data.empty:
+            continue
         
         # Map degrees to positions for equal spacing
         benchmark_data = benchmark_data.sort_values('prefetch_degree')
-        x_vals = [degree_to_position[degree] for degree in benchmark_data['prefetch_degree']]
+        x_vals = [throughput_degree_to_position[degree] for degree in benchmark_data['prefetch_degree']]
+        
+        # Get distinct visual elements for this benchmark
+        color, line_style, marker = get_style_elements(i, num_benchmarks)
         
         ax1.plot(x_vals, benchmark_data['normalized_throughput'], 
-                marker=markers[i % len(markers)], 
+                marker=marker, 
+                linestyle=line_style,
+                color=color,
                 label=benchmark, 
-                linewidth=1.5, 
-                markersize=6)
+                linewidth=2, 
+                markersize=8,
+                markerfacecolor='white',  # White fill for markers to enhance contrast
+                markeredgewidth=1.5)      # Thicker marker edges
     
-    ax1.set_title('Normalized Throughput')
-    ax1.set_xlabel('Prefetch Degree')
-    ax1.set_ylabel('Normalized Throughput')
-    ax1.grid(True, linestyle='--', alpha=0.7)
-    ax1.axhline(y=1, color='r', linestyle='--', alpha=0.7)
+    ax1.set_title('Normalized Throughput', fontsize=16, pad=15)
+    ax1.set_xlabel('Prefetch Degree', fontsize=14, labelpad=10)
+    ax1.set_ylabel('Normalized Throughput', fontsize=14, labelpad=10)
+    
+    # Add a subtle grid for readability but not too distracting
+    ax1.grid(True, linestyle='--', alpha=0.3, color='gray')
+    
+    # Add a reference line at y=1 (baseline)
+    ax1.axhline(y=1, color='k', linestyle='-', alpha=0.5, linewidth=1.5)
     
     # Set x-ticks to use evenly spaced positions with degree labels
-    ax1.set_xticks(x_positions)
-    ax1.set_xticklabels([str(int(degree)) for degree in distinct_degrees])
+    ax1.set_xticks(throughput_x_positions)
+    ax1.set_xticklabels([str(int(degree)) for degree in throughput_degrees], fontsize=12)
     
-    # Add formula annotation with proper math notation and more space
-    ax1.text(0.5, -0.35, formula1, transform=ax1.transAxes, 
-             horizontalalignment='center', fontsize=10)
+    # Improve Y-axis readability
+    ax1.yaxis.set_major_locator(plt.MaxNLocator(6))  # Limit number of y-ticks
+    ax1.tick_params(axis='y', labelsize=12)
     
-    # Panel 2: Normalized Execution Time
-    for i, benchmark in enumerate(benchmarks):
-        benchmark_data = normalized_df[normalized_df['benchmark'] == benchmark]
+    # ---------- Panel 2: Miss Reduction ----------
+    for i, benchmark in enumerate(all_benchmarks):
+        benchmark_data = reduction_df[reduction_df['benchmark'] == benchmark]
+        
+        if benchmark_data.empty:
+            continue
         
         # Map degrees to positions for equal spacing
         benchmark_data = benchmark_data.sort_values('prefetch_degree')
-        x_vals = [degree_to_position[degree] for degree in benchmark_data['prefetch_degree']]
+        x_vals = [reduction_degree_to_position[degree] for degree in benchmark_data['prefetch_degree']]
         
-        ax2.plot(x_vals, benchmark_data['normalized_execution_time'], 
-                marker=markers[i % len(markers)], 
+        # Get distinct visual elements for this benchmark
+        color, line_style, marker = get_style_elements(i, num_benchmarks)
+        
+        ax2.plot(x_vals, benchmark_data['miss_reduction'], 
+                marker=marker,
+                linestyle=line_style,
+                color=color,
                 label=benchmark, 
-                linewidth=1.5, 
-                markersize=6)
+                linewidth=2, 
+                markersize=8,
+                markerfacecolor='white',
+                markeredgewidth=1.5)
     
-    ax2.set_title('Normalized Execution Time')
-    ax2.set_xlabel('Prefetch Degree')
-    ax2.set_ylabel('Normalized Execution Time')
-    ax2.grid(True, linestyle='--', alpha=0.7)
-    ax2.axhline(y=1, color='r', linestyle='--', alpha=0.7)
+    ax2.set_title('Cache Miss Reduction', fontsize=16, pad=15)
+    ax2.set_xlabel('Prefetch Degree', fontsize=14, labelpad=10)
+    ax2.set_ylabel('Miss Reduction (%)', fontsize=14, labelpad=10)
+    
+    # Add a subtle grid for readability
+    ax2.grid(True, linestyle='--', alpha=0.3, color='gray')
+    
+    # Improve y-axis visibility
+    ax2.yaxis.set_major_locator(plt.MaxNLocator(6))
     
     # Set x-ticks to use evenly spaced positions with degree labels
-    ax2.set_xticks(x_positions)
-    ax2.set_xticklabels([str(int(degree)) for degree in distinct_degrees])
+    ax2.set_xticks(reduction_x_positions)
+    ax2.set_xticklabels([str(int(degree)) for degree in reduction_degrees], fontsize=12)
+    ax2.tick_params(axis='y', labelsize=12)
     
-    # Add formula annotation with proper math notation and more space
-    ax2.text(0.5, -0.35, formula2, transform=ax2.transAxes, 
-             horizontalalignment='center', fontsize=10)
-    
-    # Create a single legend for both panels positioned closer to the graph
+    # Create a single legend for both panels, positioned at the bottom
     handles, labels = ax1.get_legend_handles_labels()
-    fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5, 0.3),
-              fancybox=True, shadow=True, ncol=min(5, len(benchmarks)), fontsize=12)
     
-    # Adjust layout
-    plt.tight_layout(rect=[0, 0.15, 1, 0.95])
+    # For better black and white readability, use a horizontal legend below the plot with appropriate spacing
+    legend = fig.legend(handles, labels, 
+               loc='upper center', 
+               bbox_to_anchor=(0.5, 0.1),  # Position at bottom center 
+               fontsize=12, 
+               frameon=True, 
+               fancybox=False, 
+               edgecolor='black',
+               ncol=min(4, len(all_benchmarks)))
     
-    # Save as PNG only with high DPI for quality
-    plt.savefig(os.path.join(output_folder, 'combined_performance_metrics.png'), dpi=300, bbox_inches='tight', pad_inches=0.05)
+    # Make sure legend markers are visible in black and white
+    if hasattr(legend, 'legendHandles'):
+        for handle in legend.legendHandles:
+            handle.set_markerfacecolor('white')
+            handle.set_markeredgewidth(1.5)
+    else:
+        # Alternative approach using get_lines()
+        for handle in legend.get_lines():
+            handle.set_markerfacecolor('white')
+            handle.set_markeredgewidth(1.5)
+    
+    # Adjust layout to make room for the legend
+    plt.tight_layout(rect=[0, 0.1, 1, 0.95])
+    
+    # Save as PNG with high DPI for quality
+    plt.savefig(os.path.join(output_folder, 'combined_throughput_miss_reduction.png'), dpi=300, bbox_inches='tight', pad_inches=0.1)
     plt.close()
 
 def create_combined_cache_metrics_plot(df, output_folder):
@@ -425,9 +547,9 @@ def create_combined_cache_metrics_plot(df, output_folder):
     # Combine all normalized data
     normalized_df = pd.concat(normalized_data)
     
-    # Create a 2-panel figure
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
-    fig.subplots_adjust(left=0.05, right=0.95, top=0.9, bottom=0.25, wspace=0.2)
+    # Create a 2-panel figure with improved spacing and dimensions
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+    fig.subplots_adjust(wspace=0.25)  # Adjust space between panels
     
     # Create uniform x-axis positions
     distinct_degrees = sorted(normalized_df['prefetch_degree'].unique())
@@ -438,13 +560,9 @@ def create_combined_cache_metrics_plot(df, output_folder):
     prefetch_degrees = [d for d in distinct_degrees if d > 0]
     prefetch_positions = [degree_to_position[d] for d in prefetch_degrees]
     
-    # Prepare distinct markers and colors for different benchmarks
-    benchmarks = normalized_df['benchmark'].unique()
-    markers = ['o', 's', '^', 'D', 'v', '<', '>', 'p', '*', 'h']
-    
-    # Add formula annotations with proper mathematical notation
-    formula1 = r"$\text{Normalized Hit Rate} = \frac{\text{Hit Rate}_{\text{degree}}}{\text{Hit Rate}_{\text{baseline}}}$"
-    formula2 = r"$\text{Prefetch Accuracy} = \frac{\text{Prefetch Hits}}{\text{Total Prefetches}}$"
+    # Get sorted benchmarks
+    benchmarks = sorted(normalized_df['benchmark'].unique())
+    num_benchmarks = len(benchmarks)
     
     # Panel 1: Normalized Hit Rate
     if 'normalized_hit_rate' in normalized_df.columns:
@@ -459,25 +577,29 @@ def create_combined_cache_metrics_plot(df, output_folder):
             benchmark_data = benchmark_data.sort_values('prefetch_degree')
             x_vals = [degree_to_position[degree] for degree in benchmark_data['prefetch_degree']]
             
+            # Get distinct visual elements for this benchmark
+            color, line_style, marker = get_style_elements(i, num_benchmarks)
+            
             ax1.plot(x_vals, benchmark_data['normalized_hit_rate'], 
-                    marker=markers[i % len(markers)], 
+                    marker=marker,
+                    linestyle=line_style,
+                    color=color, 
                     label=benchmark, 
-                    linewidth=1.5, 
-                    markersize=6)
+                    linewidth=2, 
+                    markersize=8,
+                    markerfacecolor='white',
+                    markeredgewidth=1.5)
         
-    ax1.set_title('Normalized Cache Hit Rate')
-    ax1.set_xlabel('Prefetch Degree')
-    ax1.set_ylabel('Normalized Hit Rate')
-    ax1.grid(True, linestyle='--', alpha=0.7)
-    ax1.axhline(y=1, color='r', linestyle='--', alpha=0.7)
+    ax1.set_title('Normalized Cache Hit Rate', fontsize=16, pad=15)
+    ax1.set_xlabel('Prefetch Degree', fontsize=14, labelpad=10)
+    ax1.set_ylabel('Normalized Hit Rate', fontsize=14, labelpad=10)
+    ax1.grid(True, linestyle='--', alpha=0.3, color='gray')
+    ax1.axhline(y=1, color='k', linestyle='-', alpha=0.5, linewidth=1.5)
     
     # Set x-ticks to use evenly spaced positions with degree labels
     ax1.set_xticks(x_positions)
-    ax1.set_xticklabels([str(int(degree)) for degree in distinct_degrees])
-    
-    # Add formula annotation with proper math notation and more space
-    ax1.text(0.5, -0.35, formula1, transform=ax1.transAxes, 
-            horizontalalignment='center', fontsize=10)
+    ax1.set_xticklabels([str(int(degree)) for degree in distinct_degrees], fontsize=12)
+    ax1.tick_params(axis='y', labelsize=12)
     
     # Panel 2: Prefetch Accuracy (original values, not normalized)
     # Filter out degree 0 which has no prefetching
@@ -494,123 +616,126 @@ def create_combined_cache_metrics_plot(df, output_folder):
         benchmark_data = benchmark_data.sort_values('prefetch_degree')
         x_vals = [degree_to_position[degree] for degree in benchmark_data['prefetch_degree']]
         
+        # Get distinct visual elements for this benchmark
+        color, line_style, marker = get_style_elements(i, num_benchmarks)
+        
         ax2.plot(x_vals, benchmark_data['prefetch_accuracy'], 
-                marker=markers[i % len(markers)], 
+                marker=marker,
+                linestyle=line_style,
+                color=color, 
                 label=benchmark, 
-                linewidth=1.5, 
-                markersize=6)
+                linewidth=2, 
+                markersize=8,
+                markerfacecolor='white',
+                markeredgewidth=1.5)
     
-    ax2.set_title('Prefetch Accuracy')
-    ax2.set_xlabel('Prefetch Degree')
-    ax2.set_ylabel('Prefetch Accuracy')
-    ax2.grid(True, linestyle='--', alpha=0.7)
+    ax2.set_title('Prefetch Accuracy', fontsize=16, pad=15)
+    ax2.set_xlabel('Prefetch Degree', fontsize=14, labelpad=10)
+    ax2.set_ylabel('Prefetch Accuracy', fontsize=14, labelpad=10)
+    ax2.grid(True, linestyle='--', alpha=0.3, color='gray')
     
     # Set x-ticks for prefetch degrees (excluding 0 for panel 2)
     ax2.set_xticks(prefetch_positions)
-    ax2.set_xticklabels([str(int(degree)) for degree in prefetch_degrees])
+    ax2.set_xticklabels([str(int(degree)) for degree in prefetch_degrees], fontsize=12)
+    ax2.tick_params(axis='y', labelsize=12)
     
-    # Add formula annotation with proper math notation and more space
-    ax2.text(0.5, -0.35, formula2, transform=ax2.transAxes, 
-            horizontalalignment='center', fontsize=10)
-    
-    # Create a single legend for both panels positioned closer to the graph
+    # Create a single legend for both panels, positioned at the bottom
     handles, labels = ax1.get_legend_handles_labels()
-    fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5, 0.3),
-              fancybox=True, shadow=True, ncol=min(5, len(benchmarks)))
     
-    # Adjust layout
-    plt.tight_layout(rect=[0, 0.15, 1, 0.95])
+    # For better black and white readability, use a horizontal legend below the plot with appropriate spacing
+    legend = fig.legend(handles, labels, 
+               loc='upper center', 
+               bbox_to_anchor=(0.5, 0.1),  # Position at bottom center 
+               fontsize=12, 
+               frameon=True, 
+               fancybox=False, 
+               edgecolor='black',
+               ncol=min(4, len(benchmarks)))
     
-    # Save as PNG only with high DPI for quality
-    plt.savefig(os.path.join(output_folder, 'combined_cache_metrics.png'), dpi=300, bbox_inches='tight', pad_inches=0.05)
+    # Make sure legend markers are visible in black and white
+    if hasattr(legend, 'legendHandles'):
+        for handle in legend.legendHandles:
+            handle.set_markerfacecolor('white')
+            handle.set_markeredgewidth(1.5)
+    else:
+        # Alternative approach using get_lines()
+        for handle in legend.get_lines():
+            handle.set_markerfacecolor('white')
+            handle.set_markeredgewidth(1.5)
+    
+    # Adjust layout to make room for the legend
+    plt.tight_layout(rect=[0, 0.1, 1, 0.95])
+    
+    # Save as PNG with high DPI for quality
+    plt.savefig(os.path.join(output_folder, 'combined_cache_metrics.png'), dpi=300, bbox_inches='tight', pad_inches=0.1)
     plt.close()
 
-def create_speedup_miss_reduction_plot(df, all_results, output_folder):
+def create_combined_latency_plot(df, output_folder):
     """
-    Create a combined plot showing speedup and miss reduction.
+    Create a combined plot showing L1V and L2 cache request average latency side by side.
     
     Args:
         df (pandas.DataFrame): DataFrame containing results.
-        all_results (dict): Dictionary containing results for all benchmarks.
         output_folder (str): Path to save the output plot.
     """
-    # Create speedup data
-    speedup_data = []
-    reduction_data = []
-    
-    for benchmark in df['benchmark'].unique():
-        benchmark_df = df[df['benchmark'] == benchmark]
-        
-        if 0 not in benchmark_df['prefetch_degree'].values:
-            print(f"Warning: No baseline (prefetch degree 0) found for benchmark '{benchmark}'. Skipping calculations.")
-            continue
-        
-        baseline_time = benchmark_df[benchmark_df['prefetch_degree'] == 0]['execution_time'].iloc[0]
-        baseline_misses = benchmark_df[benchmark_df['prefetch_degree'] == 0]['read_miss'].iloc[0] if 'read_miss' in benchmark_df.columns else None
-        
-        for _, row in benchmark_df.iterrows():
-            if row['prefetch_degree'] == 0:
-                continue  # Skip baseline
-            
-            # Speedup calculation
-            speedup = baseline_time / row['execution_time']
-            speedup_data.append({
-                'benchmark': benchmark,
-                'prefetch_degree': row['prefetch_degree'],
-                'speedup': speedup
-            })
-            
-            # Miss reduction calculation (if data available)
-            if baseline_misses is not None and pd.notna(row['read_miss']) and baseline_misses > 0:
-                reduction = ((baseline_misses - row['read_miss']) / baseline_misses) * 100
-                reduction_data.append({
-                    'benchmark': benchmark,
-                    'prefetch_degree': row['prefetch_degree'],
-                    'miss_reduction': reduction
-                })
-    
-    # Create DataFrames
-    speedup_df = pd.DataFrame(speedup_data) if speedup_data else None
-    reduction_df = pd.DataFrame(reduction_data) if reduction_data else None
-    
-    if speedup_df is None and reduction_df is None:
-        print("Warning: No data available for speedup/miss reduction plot.")
+    # Check if latency data is available
+    if ('l1v_latency' not in df.columns or df['l1v_latency'].isna().all()) and \
+       ('l2_latency' not in df.columns or df['l2_latency'].isna().all()):
+        print("Warning: Neither L1V nor L2 cache latency data available for plotting.")
         return
     
-    # Create a 2-panel figure
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
-    fig.subplots_adjust(left=0.05, right=0.95, top=0.9, bottom=0.25, wspace=0.2)
+    # Create normalized data for each benchmark
+    normalized_data = []
     
-    # Get all unique prefetch degrees across both metrics
-    all_degrees = set()
-    if speedup_df is not None:
-        all_degrees.update(speedup_df['prefetch_degree'].unique())
-    if reduction_df is not None:
-        all_degrees.update(reduction_df['prefetch_degree'].unique())
+    for benchmark in df['benchmark'].unique():
+        benchmark_df = df[df['benchmark'] == benchmark].copy()
+        
+        # Skip benchmarks with insufficient data for both L1V and L2
+        if benchmark_df.empty or \
+           (benchmark_df['l1v_latency'].isna().all() and benchmark_df['l2_latency'].isna().all()):
+            continue
+        
+        # Normalize L1V latency if baseline exists
+        if 0 in benchmark_df['prefetch_degree'].values and 'l1v_latency' in benchmark_df.columns:
+            baseline_l1v = benchmark_df[benchmark_df['prefetch_degree'] == 0]['l1v_latency'].iloc[0]
+            if baseline_l1v is not None and baseline_l1v > 0:
+                benchmark_df['normalized_l1v_latency'] = benchmark_df['l1v_latency'] / baseline_l1v
+        
+        # Normalize L2 latency if baseline exists
+        if 0 in benchmark_df['prefetch_degree'].values and 'l2_latency' in benchmark_df.columns:
+            baseline_l2 = benchmark_df[benchmark_df['prefetch_degree'] == 0]['l2_latency'].iloc[0]
+            if baseline_l2 is not None and baseline_l2 > 0:
+                benchmark_df['normalized_l2_latency'] = benchmark_df['l2_latency'] / baseline_l2
+        
+        # Only add if we have at least one normalized latency
+        if 'normalized_l1v_latency' in benchmark_df.columns or 'normalized_l2_latency' in benchmark_df.columns:
+            normalized_data.append(benchmark_df)
+    
+    if not normalized_data:
+        print("Warning: No data available for normalized latency plot.")
+        return
+    
+    # Combine all normalized data
+    normalized_df = pd.concat(normalized_data)
+    
+    # Create a 2-panel figure with improved spacing and dimensions
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+    fig.subplots_adjust(wspace=0.25)  # Adjust space between panels
+    
+    # Get all unique benchmarks
+    all_benchmarks = sorted(normalized_df['benchmark'].unique())
+    num_benchmarks = len(all_benchmarks)
     
     # Create uniform x-axis positions
-    distinct_degrees = sorted(all_degrees)
+    distinct_degrees = sorted(normalized_df['prefetch_degree'].unique())
     x_positions = list(range(len(distinct_degrees)))
     degree_to_position = dict(zip(distinct_degrees, x_positions))
     
-    # Get all unique benchmarks
-    all_benchmarks = set()
-    if speedup_df is not None:
-        all_benchmarks.update(speedup_df['benchmark'].unique())
-    if reduction_df is not None:
-        all_benchmarks.update(reduction_df['benchmark'].unique())
-    
-    benchmarks = sorted(all_benchmarks)
-    markers = ['o', 's', '^', 'D', 'v', '<', '>', 'p', '*', 'h']
-    
-    # Add formula annotations with proper mathematical notation
-    formula1 = r"$\text{Speedup} = \frac{\text{Exec. Time}_{\text{baseline}}}{\text{Exec. Time}_{\text{degree}}}$"
-    formula2 = r"$\text{Miss Reduction(\%)} = \frac{\text{Misses}_{\text{baseline}} - \text{Misses}_{\text{degree}}}{\text{Misses}_{\text{baseline}}} \times 100$"
-    
-    # Panel 1: Speedup
-    if speedup_df is not None:
-        for i, benchmark in enumerate(benchmarks):
-            benchmark_data = speedup_df[speedup_df['benchmark'] == benchmark]
+    # ---------- Panel 1: Normalized L1V Latency ----------
+    if 'normalized_l1v_latency' in normalized_df.columns:
+        for i, benchmark in enumerate(all_benchmarks):
+            benchmark_data = normalized_df[(normalized_df['benchmark'] == benchmark) & 
+                                         (~normalized_df['normalized_l1v_latency'].isna())]
             
             if benchmark_data.empty:
                 continue
@@ -619,30 +744,38 @@ def create_speedup_miss_reduction_plot(df, all_results, output_folder):
             benchmark_data = benchmark_data.sort_values('prefetch_degree')
             x_vals = [degree_to_position[degree] for degree in benchmark_data['prefetch_degree']]
             
-            ax1.plot(x_vals, benchmark_data['speedup'], 
-                    marker=markers[i % len(markers)], 
+            # Get distinct visual elements for this benchmark
+            color, line_style, marker = get_style_elements(i, num_benchmarks)
+            
+            ax1.plot(x_vals, benchmark_data['normalized_l1v_latency'], 
+                    marker=marker,
+                    linestyle=line_style,
+                    color=color, 
                     label=benchmark, 
-                    linewidth=1.5, 
-                    markersize=6)
-        
-    ax1.set_title('Speedup')
-    ax1.set_xlabel('Prefetch Degree')
-    ax1.set_ylabel('Speedup (X)')
-    ax1.grid(True, linestyle='--', alpha=0.7)
-    ax1.axhline(y=1, color='r', linestyle='--', alpha=0.7)
+                    linewidth=2, 
+                    markersize=8,
+                    markerfacecolor='white',
+                    markeredgewidth=1.5)
+    
+    ax1.set_title('Normalized L1V Cache Request Latency', fontsize=16, pad=15)
+    ax1.set_xlabel('Prefetch Degree', fontsize=14, labelpad=10)
+    ax1.set_ylabel('Normalized Latency', fontsize=14, labelpad=10)
+    ax1.grid(True, linestyle='--', alpha=0.3, color='gray')
+    ax1.axhline(y=1, color='k', linestyle='-', alpha=0.5, linewidth=1.5)
     
     # Set x-ticks to use evenly spaced positions with degree labels
     ax1.set_xticks(x_positions)
-    ax1.set_xticklabels([str(int(degree)) for degree in distinct_degrees])
+    ax1.set_xticklabels([str(int(degree)) for degree in distinct_degrees], fontsize=12)
+    ax1.tick_params(axis='y', labelsize=12)
     
-    # Add formula annotation with proper math notation and more space
-    ax1.text(0.5, -0.35, formula1, transform=ax1.transAxes, 
-            horizontalalignment='center', fontsize=10)
+    # Improve Y-axis readability
+    ax1.yaxis.set_major_locator(plt.MaxNLocator(6))
     
-    # Panel 2: Miss Reduction
-    if reduction_df is not None:
-        for i, benchmark in enumerate(benchmarks):
-            benchmark_data = reduction_df[reduction_df['benchmark'] == benchmark]
+    # ---------- Panel 2: Normalized L2 Latency ----------
+    if 'normalized_l2_latency' in normalized_df.columns:
+        for i, benchmark in enumerate(all_benchmarks):
+            benchmark_data = normalized_df[(normalized_df['benchmark'] == benchmark) & 
+                                         (~normalized_df['normalized_l2_latency'].isna())]
             
             if benchmark_data.empty:
                 continue
@@ -651,168 +784,354 @@ def create_speedup_miss_reduction_plot(df, all_results, output_folder):
             benchmark_data = benchmark_data.sort_values('prefetch_degree')
             x_vals = [degree_to_position[degree] for degree in benchmark_data['prefetch_degree']]
             
-            ax2.plot(x_vals, benchmark_data['miss_reduction'], 
-                    marker=markers[i % len(markers)], 
+            # Get distinct visual elements for this benchmark
+            color, line_style, marker = get_style_elements(i, num_benchmarks)
+            
+            ax2.plot(x_vals, benchmark_data['normalized_l2_latency'], 
+                    marker=marker,
+                    linestyle=line_style,
+                    color=color, 
                     label=benchmark, 
-                    linewidth=1.5, 
-                    markersize=6)
+                    linewidth=2, 
+                    markersize=8,
+                    markerfacecolor='white',
+                    markeredgewidth=1.5)
     
-    ax2.set_title('Cache Miss Reduction')
-    ax2.set_xlabel('Prefetch Degree')
-    ax2.set_ylabel('Miss Reduction (%)')
-    ax2.grid(True, linestyle='--', alpha=0.7)
+    ax2.set_title('Normalized L2 Cache Request Latency', fontsize=16, pad=15)
+    ax2.set_xlabel('Prefetch Degree', fontsize=14, labelpad=10)
+    ax2.set_ylabel('Normalized Latency', fontsize=14, labelpad=10)
+    ax2.grid(True, linestyle='--', alpha=0.3, color='gray')
+    ax2.axhline(y=1, color='k', linestyle='-', alpha=0.5, linewidth=1.5)
     
     # Set x-ticks to use evenly spaced positions with degree labels
     ax2.set_xticks(x_positions)
-    ax2.set_xticklabels([str(int(degree)) for degree in distinct_degrees])
+    ax2.set_xticklabels([str(int(degree)) for degree in distinct_degrees], fontsize=12)
+    ax2.tick_params(axis='y', labelsize=12)
     
-    # Add formula annotation with proper math notation and more space
-    ax2.text(0.5, -0.35, formula2, transform=ax2.transAxes, 
-            horizontalalignment='center', fontsize=10)
+    # Improve Y-axis readability
+    ax2.yaxis.set_major_locator(plt.MaxNLocator(6))
     
-    # Create a single legend for both panels positioned closer to the graph
+    # Create a single legend for both panels, positioned at the bottom
     handles, labels = ax1.get_legend_handles_labels()
-    fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5, 0.3),
-              fancybox=True, shadow=True, ncol=min(5, len(benchmarks)))
+    if not handles:
+        handles, labels = ax2.get_legend_handles_labels()
     
-    # Adjust layout
-    plt.tight_layout(rect=[0, 0.15, 1, 0.95])
+    # For better black and white readability, use a horizontal legend below the plot with appropriate spacing
+    legend = fig.legend(handles, labels, 
+               loc='upper center', 
+               bbox_to_anchor=(0.5, 0.1),  # Position at bottom center 
+               fontsize=12, 
+               frameon=True, 
+               fancybox=False, 
+               edgecolor='black',
+               ncol=min(4, len(all_benchmarks)))
     
-    # Save as PNG only with high DPI for quality
-    plt.savefig(os.path.join(output_folder, 'speedup_miss_reduction.png'), dpi=300, bbox_inches='tight', pad_inches=0.05)
+    # Make sure legend markers are visible in black and white
+    if hasattr(legend, 'legendHandles'):
+        for handle in legend.legendHandles:
+            handle.set_markerfacecolor('white')
+            handle.set_markeredgewidth(1.5)
+    else:
+        # Alternative approach using get_lines()
+        for handle in legend.get_lines():
+            handle.set_markerfacecolor('white')
+            handle.set_markeredgewidth(1.5)
+    
+    # Adjust layout to make room for the legend
+    plt.tight_layout(rect=[0, 0.1, 1, 0.95])
+    
+    # Save as PNG with high DPI for quality
+    plt.savefig(os.path.join(output_folder, 'combined_normalized_latency.png'), dpi=300, bbox_inches='tight', pad_inches=0.1)
     plt.close()
 
-def create_summary_data(df, output_folder):
+def create_combined_absolute_latency_plot(df, output_folder):
     """
-    Create and save summary data as CSV files.
+    Create a combined plot showing L1V and L2 cache absolute request latency side by side.
     
     Args:
         df (pandas.DataFrame): DataFrame containing results.
-        output_folder (str): Path to save the output data.
+        output_folder (str): Path to save the output plot.
     """
-    # 1. Best prefetch degree for each benchmark
-    best_prefetch_degrees = []
+    # Check if latency data is available
+    if ('l1v_latency' not in df.columns or df['l1v_latency'].isna().all()) and \
+       ('l2_latency' not in df.columns or df['l2_latency'].isna().all()):
+        print("Warning: Neither L1V nor L2 cache latency data available for plotting.")
+        return
+    
+    # Create data for each benchmark with valid latency data
+    valid_data = []
     
     for benchmark in df['benchmark'].unique():
-        benchmark_df = df[df['benchmark'] == benchmark]
+        benchmark_df = df[df['benchmark'] == benchmark].copy()
         
-        if benchmark_df.empty:
+        # Skip benchmarks with insufficient data for both L1V and L2
+        if benchmark_df.empty or \
+           (benchmark_df['l1v_latency'].isna().all() and benchmark_df['l2_latency'].isna().all()):
             continue
         
-        # Best throughput
-        if 'throughput' in benchmark_df.columns and not benchmark_df['throughput'].isna().all():
-            max_throughput_row = benchmark_df.loc[benchmark_df['throughput'].idxmax()]
-            best_prefetch_degrees.append({
-                'benchmark': benchmark,
-                'metric': 'throughput',
-                'best_prefetch_degree': max_throughput_row['prefetch_degree'],
-                'value': max_throughput_row['throughput'] / 1e9  # Convert to billions
-            })
-        
-        # Best execution time (minimum)
-        if 'execution_time' in benchmark_df.columns and not benchmark_df['execution_time'].isna().all():
-            min_time_row = benchmark_df.loc[benchmark_df['execution_time'].idxmin()]
-            best_prefetch_degrees.append({
-                'benchmark': benchmark,
-                'metric': 'execution_time',
-                'best_prefetch_degree': min_time_row['prefetch_degree'],
-                'value': min_time_row['execution_time'] * 1000  # Convert to ms
-            })
-        
-        # Best hit rate
-        if 'hit_rate' in benchmark_df.columns and not benchmark_df['hit_rate'].isna().all():
-            max_hit_rate_row = benchmark_df.loc[benchmark_df['hit_rate'].idxmax()]
-            best_prefetch_degrees.append({
-                'benchmark': benchmark,
-                'metric': 'hit_rate',
-                'best_prefetch_degree': max_hit_rate_row['prefetch_degree'],
-                'value': max_hit_rate_row['hit_rate']
-            })
+        valid_data.append(benchmark_df)
     
-    if best_prefetch_degrees:
-        best_df = pd.DataFrame(best_prefetch_degrees)
-        best_df.to_csv(os.path.join(output_folder, 'best_prefetch_degrees.csv'), index=False)
-        
-        # Create a text summary of best prefetch degrees
-        with open(os.path.join(output_folder, 'best_prefetch_degrees_summary.txt'), 'w') as f:
-            f.write('Best Prefetch Degrees by Benchmark and Metric\n')
-            f.write('==============================================\n\n')
-            
-            # Write header
-            f.write(f"{'Benchmark':<15} {'Metric':<20} {'Best Degree':<12} {'Value':<15}\n")
-            f.write('-' * 65 + '\n')
-            
-            for _, row in best_df.iterrows():
-                metric_name = row['metric'].replace('_', ' ').title()
-                value_str = f"{row['value']:.2f}"
-                if row['metric'] == 'throughput':
-                    value_str += " B instr/s"
-                elif row['metric'] == 'execution_time':
-                    value_str += " ms"
-                elif row['metric'] == 'hit_rate':
-                    value_str += "%"
-                    
-                f.write(f"{row['benchmark']:<15} {metric_name:<20} {int(row['best_prefetch_degree']):<12} {value_str:<15}\n")
+    if not valid_data:
+        print("Warning: No data available for absolute latency plot.")
+        return
     
-    # 2. Performance improvement summary
-    improvement_data = []
+    # Combine all valid data
+    valid_df = pd.concat(valid_data)
+    
+    # Create a 2-panel figure with improved spacing and dimensions
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+    fig.subplots_adjust(wspace=0.25)  # Adjust space between panels
+    
+    # Get all unique benchmarks
+    all_benchmarks = sorted(valid_df['benchmark'].unique())
+    num_benchmarks = len(all_benchmarks)
+    
+    # Create uniform x-axis positions
+    distinct_degrees = sorted(valid_df['prefetch_degree'].unique())
+    x_positions = list(range(len(distinct_degrees)))
+    degree_to_position = dict(zip(distinct_degrees, x_positions))
+    
+    # ---------- Panel 1: Absolute L1V Latency ----------
+    if 'l1v_latency' in valid_df.columns:
+        for i, benchmark in enumerate(all_benchmarks):
+            benchmark_data = valid_df[(valid_df['benchmark'] == benchmark) & 
+                                    (~valid_df['l1v_latency'].isna())]
+            
+            if benchmark_data.empty:
+                continue
+            
+            # Map degrees to positions for equal spacing
+            benchmark_data = benchmark_data.sort_values('prefetch_degree')
+            x_vals = [degree_to_position[degree] for degree in benchmark_data['prefetch_degree']]
+            
+            # Get distinct visual elements for this benchmark
+            color, line_style, marker = get_style_elements(i, num_benchmarks)
+            
+            ax1.plot(x_vals, benchmark_data['l1v_latency'], 
+                    marker=marker,
+                    linestyle=line_style,
+                    color=color, 
+                    label=benchmark, 
+                    linewidth=2, 
+                    markersize=8,
+                    markerfacecolor='white',
+                    markeredgewidth=1.5)
+    
+    ax1.set_title('L1V Cache Request Average Latency', fontsize=16, pad=15)
+    ax1.set_xlabel('Prefetch Degree', fontsize=14, labelpad=10)
+    ax1.set_ylabel('Latency (cycles)', fontsize=14, labelpad=10)
+    ax1.grid(True, linestyle='--', alpha=0.3, color='gray')
+    
+    # Set x-ticks to use evenly spaced positions with degree labels
+    ax1.set_xticks(x_positions)
+    ax1.set_xticklabels([str(int(degree)) for degree in distinct_degrees], fontsize=12)
+    ax1.tick_params(axis='y', labelsize=12)
+    
+    # Improve Y-axis readability
+    ax1.yaxis.set_major_locator(plt.MaxNLocator(6))
+    
+    # ---------- Panel 2: Absolute L2 Latency ----------
+    if 'l2_latency' in valid_df.columns:
+        for i, benchmark in enumerate(all_benchmarks):
+            benchmark_data = valid_df[(valid_df['benchmark'] == benchmark) & 
+                                    (~valid_df['l2_latency'].isna())]
+            
+            if benchmark_data.empty:
+                continue
+            
+            # Map degrees to positions for equal spacing
+            benchmark_data = benchmark_data.sort_values('prefetch_degree')
+            x_vals = [degree_to_position[degree] for degree in benchmark_data['prefetch_degree']]
+            
+            # Get distinct visual elements for this benchmark
+            color, line_style, marker = get_style_elements(i, num_benchmarks)
+            
+            ax2.plot(x_vals, benchmark_data['l2_latency'], 
+                    marker=marker,
+                    linestyle=line_style,
+                    color=color, 
+                    label=benchmark, 
+                    linewidth=2, 
+                    markersize=8,
+                    markerfacecolor='white',
+                    markeredgewidth=1.5)
+    
+    ax2.set_title('L2 Cache Request Average Latency', fontsize=16, pad=15)
+    ax2.set_xlabel('Prefetch Degree', fontsize=14, labelpad=10)
+    ax2.set_ylabel('Latency (cycles)', fontsize=14, labelpad=10)
+    ax2.grid(True, linestyle='--', alpha=0.3, color='gray')
+    
+    # Set x-ticks to use evenly spaced positions with degree labels
+    ax2.set_xticks(x_positions)
+    ax2.set_xticklabels([str(int(degree)) for degree in distinct_degrees], fontsize=12)
+    ax2.tick_params(axis='y', labelsize=12)
+    
+    # Improve Y-axis readability
+    ax2.yaxis.set_major_locator(plt.MaxNLocator(6))
+    
+    # Create a single legend for both panels, positioned at the bottom
+    handles, labels = ax1.get_legend_handles_labels()
+    if not handles:
+        handles, labels = ax2.get_legend_handles_labels()
+    
+    # For better black and white readability, use a horizontal legend below the plot with appropriate spacing
+    legend = fig.legend(handles, labels, 
+               loc='upper center', 
+               bbox_to_anchor=(0.5, 0.1),  # Position at bottom center 
+               fontsize=12, 
+               frameon=True, 
+               fancybox=False, 
+               edgecolor='black',
+               ncol=min(4, len(all_benchmarks)))
+    
+    # Make sure legend markers are visible in black and white
+    if hasattr(legend, 'legendHandles'):
+        for handle in legend.legendHandles:
+            handle.set_markerfacecolor('white')
+            handle.set_markeredgewidth(1.5)
+    else:
+        # Alternative approach using get_lines()
+        for handle in legend.get_lines():
+            handle.set_markerfacecolor('white')
+            handle.set_markeredgewidth(1.5)
+    
+    # Adjust layout to make room for the legend
+    plt.tight_layout(rect=[0, 0.1, 1, 0.95])
+    
+    # Save as PNG with high DPI for quality
+    plt.savefig(os.path.join(output_folder, 'combined_absolute_latency.png'), dpi=300, bbox_inches='tight', pad_inches=0.1)
+    plt.close()
+
+def create_cpi_stack_idle_plot(df, output_folder):
+    """
+    Create a compact plot showing normalized CPI Stack Idle across prefetch degrees.
+    
+    Args:
+        df (pandas.DataFrame): DataFrame containing results.
+        output_folder (str): Path to save the output plot.
+    """
+    # Check if CPI Stack Idle data is available
+    if 'cpi_stack_idle' not in df.columns or df['cpi_stack_idle'].isna().all():
+        print("Warning: CPI Stack Idle data not available for plotting.")
+        return
+    
+    # Create normalized data for each benchmark
+    normalized_data = []
     
     for benchmark in df['benchmark'].unique():
-        benchmark_df = df[df['benchmark'] == benchmark]
+        benchmark_df = df[df['benchmark'] == benchmark].copy()
         
-        if 0 not in benchmark_df['prefetch_degree'].values:
-            print(f"Warning: No baseline (prefetch degree 0) found for benchmark '{benchmark}'. Skipping improvement calculation.")
+        # Skip benchmarks with insufficient data
+        if benchmark_df.empty or benchmark_df['cpi_stack_idle'].isna().all():
             continue
         
-        baseline_row = benchmark_df[benchmark_df['prefetch_degree'] == 0].iloc[0]
-        baseline_throughput = baseline_row['throughput']
-        baseline_time = baseline_row['execution_time']
+        # Normalize CPI Stack Idle if baseline exists
+        if 0 in benchmark_df['prefetch_degree'].values:
+            baseline_cpi = benchmark_df[benchmark_df['prefetch_degree'] == 0]['cpi_stack_idle'].iloc[0]
+            if baseline_cpi is not None and baseline_cpi > 0:
+                benchmark_df['normalized_cpi_idle'] = benchmark_df['cpi_stack_idle'] / baseline_cpi
         
-        for prefetch_degree in sorted(benchmark_df['prefetch_degree'].unique()):
-            if prefetch_degree == 0:
-                continue  # Skip baseline
-            
-            degree_row = benchmark_df[benchmark_df['prefetch_degree'] == prefetch_degree].iloc[0]
-            
-            throughput_improvement = ((degree_row['throughput'] - baseline_throughput) / baseline_throughput) * 100
-            time_reduction = ((baseline_time - degree_row['execution_time']) / baseline_time) * 100
-            
-            improvement_data.append({
-                'benchmark': benchmark,
-                'prefetch_degree': prefetch_degree,
-                'throughput_improvement_percent': throughput_improvement,
-                'execution_time_reduction_percent': time_reduction
-            })
+        # Only add if we have normalized data
+        if 'normalized_cpi_idle' in benchmark_df.columns:
+            normalized_data.append(benchmark_df)
     
-    if improvement_data:
-        improvement_df = pd.DataFrame(improvement_data)
-        improvement_df.to_csv(os.path.join(output_folder, 'performance_improvements.csv'), index=False)
+    if not normalized_data:
+        print("Warning: No data available for normalized CPI Stack Idle plot.")
+        return
     
-    # 3. Overall summary table
-    df_summary = df.copy()
-    df_summary['throughput'] = df_summary['throughput'] / 1e9  # Convert to billions
-    df_summary['execution_time'] = df_summary['execution_time'] * 1000  # Convert to ms
+    # Combine all normalized data
+    normalized_df = pd.concat(normalized_data)
     
-    # Rename columns for clearer understanding
-    summary_columns = {
-        'benchmark': 'Benchmark',
-        'prefetch_degree': 'Prefetch_Degree',
-        'throughput': 'Throughput_billion_instr_per_s',
-        'execution_time': 'Execution_Time_ms',
-        'hit_rate': 'Hit_Rate_percent',
-        'total_instructions': 'Total_Instructions',
-        'prefetch_hits': 'Prefetch_Hits',
-        'total_prefetches': 'Total_Prefetches',
-        'successful_prefetches': 'Successful_Prefetches',
-        'prefetch_accuracy': 'Prefetch_Accuracy',
-        'prefetch_utilization': 'Prefetch_Utilization_percent'
-    }
+    # Create a compact figure
+    fig, ax = plt.subplots(figsize=(6, 4))  # Smaller size for compactness
     
-    # Select only columns that exist in the DataFrame
-    existing_columns = [col for col in summary_columns.keys() if col in df_summary.columns]
+    # Create uniform x-axis positions
+    distinct_degrees = sorted(normalized_df['prefetch_degree'].unique())
+    x_positions = list(range(len(distinct_degrees)))
+    degree_to_position = dict(zip(distinct_degrees, x_positions))
     
-    df_summary = df_summary[existing_columns].rename(columns={col: summary_columns[col] for col in existing_columns})
-    df_summary.to_csv(os.path.join(output_folder, 'overall_summary.csv'), index=False)
+    # Get benchmarks and prepare for plotting
+    benchmarks = sorted(normalized_df['benchmark'].unique())
+    num_benchmarks = len(benchmarks)
+    
+    # Create a line for each benchmark with distinct styles
+    for i, benchmark in enumerate(benchmarks):
+        benchmark_data = normalized_df[normalized_df['benchmark'] == benchmark]
+        
+        # Map degrees to positions for equal spacing
+        benchmark_data = benchmark_data.sort_values('prefetch_degree')
+        x_vals = [degree_to_position[degree] for degree in benchmark_data['prefetch_degree']]
+        
+        # Get distinct visual elements for this benchmark
+        color, line_style, marker = get_style_elements(i, num_benchmarks)
+        
+        ax.plot(x_vals, benchmark_data['normalized_cpi_idle'], 
+                marker=marker, 
+                linestyle=line_style,
+                color=color,
+                label=benchmark, 
+                linewidth=1.5,  # Slightly thinner lines for compact plot
+                markersize=6,   # Smaller markers for compact plot
+                markerfacecolor='white',
+                markeredgewidth=1)
+    
+    ax.set_title('Normalized CPI Stack Idle', fontsize=14)
+    ax.set_xlabel('Prefetch Degree', fontsize=12)
+    ax.set_ylabel('Normalized Value', fontsize=12)
+    
+    # Add a subtle grid for readability
+    ax.grid(True, linestyle='--', alpha=0.2, color='gray')
+    
+    # Add a reference line at y=1 (baseline)
+    ax.axhline(y=1, color='k', linestyle='-', alpha=0.3, linewidth=1)
+    
+    # Set x-ticks to use evenly spaced positions with degree labels
+    ax.set_xticks(x_positions)
+    ax.set_xticklabels([str(int(degree)) for degree in distinct_degrees], fontsize=10)
+    
+    # Improve Y-axis readability
+    ax.yaxis.set_major_locator(plt.MaxNLocator(5))  # Fewer ticks for compactness
+    ax.tick_params(axis='y', labelsize=10)
+    
+    # Create a compact legend - if many benchmarks, put it outside to save space
+    if num_benchmarks <= 3:
+        # For few benchmarks, place legend inside the plot to save space
+        legend = ax.legend(loc='best',
+                         fontsize=9, 
+                         frameon=True, 
+                         fancybox=False, 
+                         edgecolor='black', 
+                         ncol=1)
+    else:
+        # For many benchmarks, use horizontal layout at bottom
+        legend = ax.legend(loc='upper center', 
+                         bbox_to_anchor=(0.5, -0.2),
+                         fontsize=9, 
+                         frameon=True, 
+                         fancybox=False, 
+                         edgecolor='black', 
+                         ncol=min(4, num_benchmarks))
+    
+    # Make sure legend markers are visible in black and white
+    if hasattr(legend, 'legendHandles'):
+        for handle in legend.legendHandles:
+            handle.set_markerfacecolor('white')
+            handle.set_markeredgewidth(1)
+    else:
+        # Alternative approach using get_lines()
+        for handle in legend.get_lines():
+            handle.set_markerfacecolor('white')
+            handle.set_markeredgewidth(1)
+    
+    # Tighter layout for compactness
+    if num_benchmarks <= 3:
+        plt.tight_layout()
+    else:
+        plt.tight_layout(rect=[0, 0.1, 1, 0.95])
+    
+    # Save as PNG with high DPI for quality
+    plt.savefig(os.path.join(output_folder, 'normalized_cpi_idle.png'), dpi=300, bbox_inches='tight', pad_inches=0.05)
+    plt.close()
 
 def main():
     # Get the parent folder path from command line arguments or use current directory
@@ -852,7 +1171,7 @@ def main():
     print("\n=== Creating Comparison Plots ===")
     create_comparison_plots(all_results, output_folder)
     
-    print(f"\nAnalysis complete. Overleaf-ready results saved to {output_folder}/")
+    print(f"\nAnalysis complete. Plot images saved to {output_folder}/")
 
 if __name__ == "__main__":
     main()

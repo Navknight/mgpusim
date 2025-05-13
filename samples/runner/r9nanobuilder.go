@@ -88,6 +88,57 @@ type R9NanoGPUBuilder struct {
 	magicMode bool
 }
 
+type CoheranceDirectory struct {
+	*sim.TickingComponent
+
+	directory map[uint64]*DirectoryEntry
+	caches    []*writeback.Cache
+
+	invalidationPorts []sim.Port
+	responsePorts     []sim.Port
+
+	pendingInvalidations map[uint64]map[int]bool
+}
+
+type DirectoryEntry struct {
+	sharers     map[int]bool
+	owner       int
+	state       CoheranceState
+	PendingAcks int
+}
+
+type CoheranceState int
+
+const (
+	Invalid CoheranceState = iota
+	Shared
+	Modified
+)
+
+func (b *R9NanoGPUBuilder) buildCoheranceDirectory() {
+	dir := &CoheranceDirectory{
+		TickingComponent:     sim.NewTickingComponent(b.gpuName+".CoheranceDir", b.engine, b.freq, nil),
+		directory:            make(map[uint64]*DirectoryEntry),
+		caches:               b.l2Caches,
+		invalidationPorts:    make([]sim.Port, len(b.l2Caches)),
+		responsePorts:        make([]sim.Port, len(b.l2Caches)),
+		pendingInvalidations: make(map[uint64]map[int]bool),
+	}
+
+	for i := range b.l2Caches {
+		invPortName := fmt.Sprintf("%s.Inv[%d]", b.gpuName, i)
+		respPortName := fmt.Sprintf("%s.Resp[%d]", b.gpuName, i)
+
+		dir.invalidationPorts[i] = sim.NewLimitNumMsgPort(dir, 16, invPortName)
+		dir.responsePorts[i] = sim.NewLimitNumMsgPort(dir, 16, respPortName)
+
+		dir.AddPort(invPortName, dir.invalidationPorts[i])
+		dir.AddPort(respPortName, dir.responsePorts[i])
+	}
+
+	b.coheranceDirectory = dir
+}
+
 // MakeR9NanoGPUBuilder provides a GPU builder that can builds the R9Nano GPU.
 func MakeR9NanoGPUBuilder() R9NanoGPUBuilder {
 	b := R9NanoGPUBuilder{
@@ -327,39 +378,89 @@ func (b *R9NanoGPUBuilder) connectCP() {
 }
 
 func (b *R9NanoGPUBuilder) connectL1ToL2() {
-	lowModuleFinder := mem.NewInterleavedLowModuleFinder(
-		1 << b.log2MemoryBankInterleavingSize)
-	lowModuleFinder.ModuleForOtherAddresses = b.rdmaEngine.ToL1
-	lowModuleFinder.UseAddressSpaceLimitation = true
-	lowModuleFinder.LowAddress = b.memAddrOffset
-	lowModuleFinder.HighAddress = b.memAddrOffset + 4*mem.GB
-
-	l1ToL2Conn := sim.NewDirectConnection(b.gpuName+".L1ToL2",
+	l2TopPorts := make([]sim.Port, len(b.l2Caches))
+	totalCUs := b.numCU()
+	rdmaConn := sim.NewDirectConnection(b.gpuName+".RDMAToL2",
 		b.engine, b.freq)
+	rdmaConn.PlugIn(b.rdmaEngine.ToL1, 64)
+	rdmaConn.PlugIn(b.rdmaEngine.ToL2, 64)
+	for i, l1v := range b.l1vCaches {
+		connName := fmt.Sprintf("%s.L1V[%d].L2V[%d]", b.gpuName, i, i)
+		l1vToL2vConn := sim.NewDirectConnection(connName, b.engine, b.freq)
 
-	b.rdmaEngine.SetLocalModuleFinder(lowModuleFinder)
-	l1ToL2Conn.PlugIn(b.rdmaEngine.ToL1, 64)
-	l1ToL2Conn.PlugIn(b.rdmaEngine.ToL2, 64)
+		l2v := b.l2Caches[i]
+		l2TopPort := l2v.GetPortByName("Top")
+		l2TopPorts[i] = l2TopPort
 
-	for _, l2 := range b.l2Caches {
-		lowModuleFinder.LowModules = append(lowModuleFinder.LowModules,
-			l2.GetPortByName("Top"))
-		l1ToL2Conn.PlugIn(l2.GetPortByName("Top"), 64)
+		l1vToL2vConn.PlugIn(l1v.GetPortByName("Bottom"), 16)
+		l1vToL2vConn.PlugIn(l2TopPort, 64)
+
+		l1Finder := mem.NewInterleavedLowModuleFinder(1 << b.log2MemoryBankInterleavingSize)
+
+		l1Finder.ModuleForOtherAddresses = b.rdmaEngine.ToL1
+		l1Finder.UseAddressSpaceLimitation = true
+		l1Finder.LowAddress = b.memAddrOffset
+		l1Finder.HighAddress = b.memAddrOffset + 4*mem.GB
+		l1Finder.LowModules = append(l1Finder.LowModules, l2TopPort)
+
+		l1v.SetLowModuleFinder(l1Finder)
 	}
 
-	for _, l1v := range b.l1vCaches {
-		l1v.SetLowModuleFinder(lowModuleFinder)
-		l1ToL2Conn.PlugIn(l1v.GetPortByName("Bottom"), 16)
+	for i, l1s := range b.l1sCaches {
+		l2Index := totalCUs + i
+
+		connName := fmt.Sprintf("%s.L1S[%d].L2S[%d]", b.gpuName, i, i)
+		l1sToL2sConn := sim.NewDirectConnection(connName, b.engine, b.freq)
+
+		l2s := b.l2Caches[l2Index]
+		l2TopPort := l2s.GetPortByName("Top")
+		l2TopPorts[l2Index] = l2TopPort
+
+		l1sToL2sConn.PlugIn(l1s.GetPortByName("Bottom"), 16)
+		l1sToL2sConn.PlugIn(l2TopPort, 64)
+
+		l1Finder := mem.NewInterleavedLowModuleFinder(1 << b.log2MemoryBankInterleavingSize)
+		l1Finder.ModuleForOtherAddresses = b.rdmaEngine.ToL1
+		l1Finder.UseAddressSpaceLimitation = true
+		l1Finder.LowAddress = b.memAddrOffset
+		l1Finder.HighAddress = b.memAddrOffset + 4*mem.GB
+		l1Finder.LowModules = append(l1Finder.LowModules, l2TopPort)
+		l1s.SetLowModuleFinder(l1Finder)
 	}
 
-	for _, l1s := range b.l1sCaches {
-		l1s.SetLowModuleFinder(lowModuleFinder)
-		l1ToL2Conn.PlugIn(l1s.GetPortByName("Bottom"), 16)
+	for i, l1i := range b.l1iAddrTrans {
+		l2Index := totalCUs + b.numShaderArray + i
+
+		connName := fmt.Sprintf("%s.L1I[%d].L2I[%d]", b.gpuName, i, i)
+		l1iToL2iConn := sim.NewDirectConnection(connName, b.engine, b.freq)
+
+		l2i := b.l2Caches[l2Index]
+		l2TopPort := l2i.GetPortByName("Top")
+		l2TopPorts[l2Index] = l2TopPort
+
+		l1iToL2iConn.PlugIn(l1i.GetPortByName("Bottom"), 16)
+		l1iToL2iConn.PlugIn(l2TopPort, 64)
+
+		l1Finder := mem.NewInterleavedLowModuleFinder(1 << b.log2MemoryBankInterleavingSize)
+		l1Finder.ModuleForOtherAddresses = b.rdmaEngine.ToL1
+		l1Finder.UseAddressSpaceLimitation = true
+		l1Finder.LowAddress = b.memAddrOffset
+		l1Finder.HighAddress = b.memAddrOffset + 4*mem.GB
+		l1Finder.LowModules = append(l1Finder.LowModules, l2TopPort)
+		l1i.SetLowModuleFinder(l1Finder)
 	}
 
-	for _, l1iAT := range b.l1iAddrTrans {
-		l1iAT.SetLowModuleFinder(lowModuleFinder)
-		l1ToL2Conn.PlugIn(l1iAT.GetPortByName("Bottom"), 16)
+	//TODO: fix the rdma implementation
+	rdmaFinder := mem.NewInterleavedLowModuleFinder(1 << b.log2MemoryBankInterleavingSize)
+	rdmaFinder.LowModules = l2TopPorts
+	rdmaFinder.UseAddressSpaceLimitation = true
+	rdmaFinder.LowAddress = b.memAddrOffset
+	rdmaFinder.HighAddress = b.memAddrOffset + 4*mem.GB
+
+	b.rdmaEngine.SetLocalModuleFinder(rdmaFinder)
+
+	for _, l2Port := range l2TopPorts {
+		rdmaConn.PlugIn(l2Port, 64)
 	}
 }
 
@@ -555,7 +656,14 @@ func (b *R9NanoGPUBuilder) buildSAs() {
 }
 
 func (b *R9NanoGPUBuilder) buildL2Caches() {
-	byteSize := b.l2CacheSize / uint64(b.numMemoryBank)
+	totalCus := b.numCU()
+	numL1S := b.numShaderArray
+	numL1I := b.numShaderArray
+
+	totalL2Partitions := totalCus + numL1S + numL1I
+
+	byteSize := b.l2CacheSize / uint64(totalL2Partitions)
+
 	l2Builder := writeback.MakeBuilder().
 		WithEngine(b.engine).
 		WithFreq(b.freq).
@@ -569,13 +677,51 @@ func (b *R9NanoGPUBuilder) buildL2Caches() {
 		l2Builder = l2Builder.WithPrefetcherEnabled(b.l2Prefetcher)
 	}
 
-	for i := 0; i < b.numMemoryBank; i++ {
+	if b.l2Infinite {
+		l2Builder = l2Builder.WithInfiniteCache()
+	}
+
+	for i := 0; i < totalCus; i++ {
 		cacheName := fmt.Sprintf("%s.L2[%d]", b.gpuName, i)
-		l2 := l2Builder.WithInterleaving(
-			1<<(b.log2MemoryBankInterleavingSize-b.log2CacheLineSize),
-			b.numMemoryBank,
-			i,
-		).Build(cacheName)
+		l2 := l2Builder.Build(cacheName)
+		b.l2Caches = append(b.l2Caches, l2)
+		b.gpu.L2Caches = append(b.gpu.L2Caches, l2)
+
+		if b.enableVisTracing {
+			tracing.CollectTrace(l2, b.visTracer)
+		}
+
+		if b.enableMemTracing {
+			tracing.CollectTrace(l2, b.memTracer)
+		}
+
+		if b.monitor != nil {
+			b.monitor.RegisterComponent(l2)
+		}
+	}
+
+	for i := 0; i < totalCus; i++ {
+		cacheName := fmt.Sprintf("%s.L2S[%d]", b.gpuName, i)
+		l2 := l2Builder.Build(cacheName)
+		b.l2Caches = append(b.l2Caches, l2)
+		b.gpu.L2Caches = append(b.gpu.L2Caches, l2)
+
+		if b.enableVisTracing {
+			tracing.CollectTrace(l2, b.visTracer)
+		}
+
+		if b.enableMemTracing {
+			tracing.CollectTrace(l2, b.memTracer)
+		}
+
+		if b.monitor != nil {
+			b.monitor.RegisterComponent(l2)
+		}
+	}
+
+	for i := 0; i < totalCus; i++ {
+		cacheName := fmt.Sprintf("%s.L2I[%d]", b.gpuName, i)
+		l2 := l2Builder.Build(cacheName)
 		b.l2Caches = append(b.l2Caches, l2)
 		b.gpu.L2Caches = append(b.gpu.L2Caches, l2)
 

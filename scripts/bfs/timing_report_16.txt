@@ -1,0 +1,10 @@
+prefetcher-16
+Monitoring simulation with http://localhost:42321
+Depth 0
+Depth 1
+Depth 2
+Depth 3
+
+real	53m56.158s
+user	15m14.747s
+sys	0m3.798s
