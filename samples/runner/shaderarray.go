@@ -45,6 +45,7 @@ type shaderArrayBuilder struct {
 	freq              sim.Freq
 	log2CacheLineSize uint64
 	log2PageSize      uint64
+	l1TLBLatency      int
 
 	isaDebugging bool
 	visTracer    tracing.Tracer
@@ -89,6 +90,11 @@ func (b shaderArrayBuilder) withLog2CachelineSize(
 	log2Size uint64,
 ) shaderArrayBuilder {
 	b.log2CacheLineSize = log2Size
+	return b
+}
+
+func (b shaderArrayBuilder) withL1TLBLatency(cycles int) shaderArrayBuilder {
+	b.l1TLBLatency = cycles
 	return b
 }
 
@@ -333,8 +339,10 @@ func (b *shaderArrayBuilder) buildL1VTLBs(sa *shaderArray) {
 		WithFreq(b.freq).
 		WithNumMSHREntry(4).
 		WithNumSets(1).
-		WithNumWays(64).
-		WithNumReqPerCycle(4)
+		WithNumWays(32).
+		WithNumReqPerCycle(4).
+		WithPageSize(1 << b.log2PageSize).
+		WithLatency(b.l1TLBLatency)
 
 	for i := 0; i < b.numCU; i++ {
 		name := fmt.Sprintf("%s.L1VTLB[%d]", b.name, i)
@@ -412,7 +420,9 @@ func (b *shaderArrayBuilder) buildL1STLB(sa *shaderArray) {
 		WithNumMSHREntry(4).
 		WithNumSets(1).
 		WithNumWays(64).
-		WithNumReqPerCycle(4)
+		WithNumReqPerCycle(4).
+		WithPageSize(1 << b.log2PageSize).
+		WithLatency(b.l1TLBLatency)
 
 	name := fmt.Sprintf("%s.L1STLB", b.name)
 	tlb := builder.Build(name)
@@ -486,7 +496,9 @@ func (b *shaderArrayBuilder) buildL1ITLB(sa *shaderArray) {
 		WithNumMSHREntry(4).
 		WithNumSets(1).
 		WithNumWays(64).
-		WithNumReqPerCycle(4)
+		WithNumReqPerCycle(4).
+		WithPageSize(1 << b.log2PageSize).
+		WithLatency(b.l1TLBLatency)
 
 	name := fmt.Sprintf("%s.L1ITLB", b.name)
 	tlb := builder.Build(name)

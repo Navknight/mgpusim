@@ -2,6 +2,7 @@ package runner
 
 import (
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/sarchlab/akita/v3/sim"
@@ -64,6 +65,7 @@ func (r *Runner) defineMetrics() {
 	r.addRDMAEngineTracer()
 	r.addDRAMTracer()
 	r.addSIMDBusyTimeTracer()
+	r.addDeadBlockTracers()
 
 	atexit.Register(func() { r.reportStats() })
 }
@@ -365,6 +367,8 @@ func (r *Runner) reportStats() {
 	r.reportCacheLatency()
 	r.reportCacheHitRate()
 	r.reportTLBHitRate()
+	r.reportPWCHits()
+	r.reportDeadBlocks()
 	r.reportRDMATransactionCount()
 	r.reportDRAMTransactionCount()
 	r.dumpMetrics()
@@ -514,6 +518,35 @@ func (r *Runner) reportTLBHitRate() {
 			tracer.tlb.Name(), "miss", float64(miss))
 		r.metricsCollector.Collect(
 			tracer.tlb.Name(), "mshr-hit", float64(mshrHit))
+	}
+}
+
+func (r *Runner) reportPWCHits() {
+	if !r.ReportTLBHitRate {
+		return
+	}
+
+	for _, gpu := range r.platform.GPUs {
+		if gpu.GMMU == nil {
+			continue
+		}
+
+		for level, n := range gpu.GMMU.PWC.Hits {
+			what := "pwc-miss"
+			if level > 0 {
+				what = "pwc-hit-level-" + strconv.Itoa(level)
+			}
+			r.metricsCollector.Collect(gpu.GMMU.Name(), what, float64(n))
+		}
+
+		r.metricsCollector.Collect(gpu.GMMU.Name(), "invalidation-walks",
+			float64(gpu.GMMU.NumInvalidationWalks))
+
+		if gpu.GMMU.AccessCounter != nil {
+			r.metricsCollector.Collect(gpu.GMMU.Name(),
+				"access-counter-notifications",
+				float64(gpu.GMMU.AccessCounter.NumNotifications))
+		}
 	}
 }
 

@@ -3,6 +3,9 @@ package runner
 
 import (
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
 	// Enable profiling
 	_ "net/http/pprof"
@@ -51,11 +54,28 @@ type Runner struct {
 	ReportTLBHitRate           bool
 	ReportRDMATransactionCount bool
 	ReportDRAMTransactionCount bool
+	ReportDeadBlocks           bool
 	UseUnifiedMemory           bool
 	ReportSIMDBusyTime         bool
 	ReportCPIStack             bool
 
 	GPUIDs []int
+
+	deadBlockGroups []deadBlockGroup
+
+	pageSize    uint64
+	gmmuWalkers int
+	gmmuLatency int
+	gmmuPWCSize int
+	pagePolicy  string
+
+	accessCounterThreshold uint64
+	l1TLBLatency           int
+	l2TLBLatency           int
+	faultServiceTime       sim.VTimeInSec
+	gpuLink                string
+	nvlinkLinks            int
+	nvlinkBandwidth        uint64
 }
 
 // Init initializes the platform simulate
@@ -109,6 +129,13 @@ func (r *Runner) buildTimingPlatform() {
 	b := MakeR9NanoBuilder().
 		WithNumGPU(r.GPUIDs[len(r.GPUIDs)-1])
 
+	b = b.WithLog2PageSize(r.pageSize).
+		WithGMMU(r.gmmuWalkers, r.gmmuLatency, r.gmmuPWCSize).
+		WithPagePolicy(r.pagePolicy, r.accessCounterThreshold).
+		WithTLBLatency(r.l1TLBLatency, r.l2TLBLatency).
+		WithFaultServiceTime(r.faultServiceTime).
+		WithGPULink(r.gpuLink, r.nvlinkLinks, r.nvlinkBandwidth)
+
 	if r.Parallel {
 		b = b.WithParallelEngine()
 	}
@@ -142,6 +169,19 @@ func (r *Runner) buildTimingPlatform() {
 	}
 
 	r.platform = b.Build()
+
+	if *migrationTraceDir != "" {
+		t := driver.NewMigrationTracer(*migrationTraceDir)
+		r.platform.Driver.MigrationTracer = t
+		atexit.Register(t.Close)
+
+		sig := make(chan os.Signal, 1)
+		signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT)
+		go func() {
+			<-sig
+			atexit.Exit(1)
+		}()
+	}
 
 	if !*disableAkitaRTM {
 		r.monitor.StartServer()
@@ -244,6 +284,7 @@ func (r *Runner) Run() {
 	r.platform.Driver.Run()
 
 	var wg sync.WaitGroup
+	verifyFailed := false
 	for _, b := range r.benchmarks {
 		wg.Add(1)
 		go func(b benchmarks.Benchmark, wg *sync.WaitGroup) {
@@ -256,7 +297,15 @@ func (r *Runner) Run() {
 			b.Run()
 
 			if r.Verify {
-				b.Verify()
+				func() {
+					defer func() {
+						if e := recover(); e != nil {
+							log.Printf("VERIFICATION FAILED: %v", e)
+							verifyFailed = true
+						}
+					}()
+					b.Verify()
+				}()
 			}
 			wg.Done()
 		}(b, &wg)
@@ -265,6 +314,10 @@ func (r *Runner) Run() {
 
 	r.platform.Driver.Terminate()
 	r.platform.Engine.Finished()
+
+	if verifyFailed {
+		atexit.Exit(3)
+	}
 
 	atexit.Exit(0)
 }

@@ -1,7 +1,28 @@
 package runner
 
-import "flag"
+import (
+	"flag"
 
+	"github.com/sarchlab/akita/v3/sim"
+	"github.com/sarchlab/mgpusim/v3/timing/cu"
+)
+
+var gmmuWalkers = flag.Uint64("gmmu-walkers", 8, "Number of walkers per GMMU")
+var gmmuLatency = flag.Uint64("gmmu-latency", 100, "Cycles per page table level in a GMMU page walk")
+var gmmuPWCSize = flag.Uint64("gmmu-pwc-size", 128, "Entries in each GMMU's page walk cache (0 disables it)")
+var deadBlockReportFlag = flag.Bool("report-dead-blocks", false, "Report dead-block statistics of the L1V/L2 caches and L1V/L2 TLBs.")
+var pagePolicy = flag.String("page-policy", "accesscounter", "Page migration policy: ontouch, firsttouch, accesscounter or none.")
+var noWriteCoalesceWait = flag.Bool("no-write-coalesce-wait", false, "Send every write of a store instruction without waiting to coalesce in L1.")
+var gpuLink = flag.String("gpu-link", "pcie", "GPU-to-GPU link: pcie or nvlink.")
+var nvlinkLinks = flag.Int("nvlink-links", 6, "NVLink links between each pair of GPUs.")
+var nvlinkGBps = flag.Float64("nvlink-gbps", 25, "Bandwidth of one NVLink link in one direction, in GB/s.")
+var faultServiceUS = flag.Float64("fault-service-us", 45, "Driver time to service a page fault before migrating, in microseconds.")
+var accessCounterThreshold = flag.Uint64("access-counter-threshold", 256, "Remote accesses to a page before the access-counter policy migrates it.")
+var l1TLBLatency = flag.Uint64("l1-tlb-latency", 1, "Lookup latency of the L1 TLBs in cycles.")
+var l2TLBLatency = flag.Uint64("l2-tlb-latency", 10, "Lookup latency of the L2 TLB in cycles.")
+var pageSize = flag.Uint64("log2-page-size", 12, "Define the log2 page size - 12/16/21.")
+var migrationTraceDir = flag.String("trace-migration-dir", "",
+	"Write one row per migrated page, with phase times, to DIR/mig.csv.gz.")
 var timingFlag = flag.Bool("timing", false, "Run detailed timing simulation.")
 var maxInstCount = flag.Uint64("max-inst", 0,
 	"Terminate the simulation after the given number of instructions is retired.")
@@ -42,8 +63,8 @@ var bufferLevelTracePeriodFlag = flag.Float64("buffer-level-trace-period", 0.0,
 var simdBusyTimeTracerFlag = flag.Bool("report-busy-time", false, "Report SIMD Unit's busy time")
 var reportCPIStackFlag = flag.Bool("report-cpi-stack", false, "Report CPI stack")
 var customPortForAkitaRTM = flag.Int("akitartm-port", 0,
-	`Custom port to host AkitaRTM. A 4-digit or 5-digit port number is required. If 
-this number is not given or a invalid number is given number, a random port 
+	`Custom port to host AkitaRTM. A 4-digit or 5-digit port number is required. If
+this number is not given or a invalid number is given number, a random port
 will be used.`)
 var disableAkitaRTM = flag.Bool("disable-rtm", false, "Disable the AkitaRTM monitoring portal")
 
@@ -75,6 +96,25 @@ var visTraceEndTime = flag.Float64("trace-vis-end", -1,
 //
 //nolint:gocyclo
 func (r *Runner) ParseFlag() *Runner {
+	if *pageSize == 12 || *pageSize == 16 || *pageSize == 21 {
+		r.pageSize = *pageSize
+	} else {
+		r.pageSize = 12
+	}
+
+	r.gmmuWalkers = int(*gmmuWalkers)
+	r.gmmuLatency = int(*gmmuLatency)
+	r.gmmuPWCSize = int(*gmmuPWCSize)
+	r.pagePolicy = *pagePolicy
+	r.faultServiceTime = sim.VTimeInSec(*faultServiceUS * 1e-6)
+	r.gpuLink = *gpuLink
+	cu.DisableWriteCoalesceWait = *noWriteCoalesceWait
+	r.nvlinkLinks = *nvlinkLinks
+	r.nvlinkBandwidth = uint64(*nvlinkGBps * 1e9)
+	r.accessCounterThreshold = *accessCounterThreshold
+	r.l1TLBLatency = int(*l1TLBLatency)
+	r.l2TLBLatency = int(*l2TLBLatency)
+
 	if *parallelFlag {
 		r.Parallel = true
 	}
@@ -132,6 +172,11 @@ func (r *Runner) ParseFlag() *Runner {
 		r.ReportDRAMTransactionCount = true
 		r.ReportRDMATransactionCount = true
 		r.ReportCPIStack = true
+		r.ReportDeadBlocks = true
+	}
+
+	if *deadBlockReportFlag {
+		r.ReportDeadBlocks = true
 	}
 
 	return r

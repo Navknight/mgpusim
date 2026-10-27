@@ -12,6 +12,7 @@ import (
 	"github.com/sarchlab/akita/v3/mem/vm"
 	"github.com/sarchlab/akita/v3/mem/vm/mmu"
 	"github.com/sarchlab/akita/v3/monitoring"
+	"github.com/sarchlab/akita/v3/noc/networking/nvlink"
 	"github.com/sarchlab/akita/v3/noc/networking/pcie"
 	"github.com/sarchlab/akita/v3/sim"
 	"github.com/sarchlab/akita/v3/tracing"
@@ -30,6 +31,17 @@ type R9NanoPlatformBuilder struct {
 	numCUPerSA                         int
 	useMagicMemoryCopy                 bool
 	log2PageSize                       uint64
+	gmmuWalkers                        int
+	gmmuLatency                        int
+	gmmuPWCSize                        int
+	pagePolicy                         string
+	accessCounterThreshold             uint64
+	l1TLBLatency                       int
+	l2TLBLatency                       int
+	faultServiceTime                   sim.VTimeInSec
+	gpuLink                            string
+	nvlinkLinks                        int
+	nvlinkBandwidth                    uint64
 
 	engine               sim.Engine
 	monitor              *monitoring.Monitor
@@ -50,6 +62,16 @@ func MakeR9NanoBuilder() R9NanoPlatformBuilder {
 		numSAPerGPU:       16,
 		numCUPerSA:        4,
 		log2PageSize:      12,
+		gmmuWalkers:       8,
+		gmmuLatency:       100,
+		gmmuPWCSize:       128,
+		pagePolicy:        "accesscounter",
+		l1TLBLatency:      1,
+		l2TLBLatency:      10,
+		faultServiceTime:  45e-6,
+		gpuLink:           "pcie",
+		nvlinkLinks:       6,
+		nvlinkBandwidth:   25e9,
 		traceVisStartTime: -1,
 		traceVisEndTime:   -1,
 	}
@@ -108,6 +130,46 @@ func (b R9NanoPlatformBuilder) WithLog2PageSize(
 	return b
 }
 
+func (b R9NanoPlatformBuilder) WithGMMU(
+	walkers, latency, pwcSize int,
+) R9NanoPlatformBuilder {
+	b.gmmuWalkers = walkers
+	b.gmmuLatency = latency
+	b.gmmuPWCSize = pwcSize
+	return b
+}
+
+func (b R9NanoPlatformBuilder) WithTLBLatency(l1, l2 int) R9NanoPlatformBuilder {
+	b.l1TLBLatency = l1
+	b.l2TLBLatency = l2
+	return b
+}
+
+func (b R9NanoPlatformBuilder) WithGPULink(
+	link string,
+	nvlinkLinks int,
+	nvlinkBandwidth uint64,
+) R9NanoPlatformBuilder {
+	b.gpuLink = link
+	b.nvlinkLinks = nvlinkLinks
+	b.nvlinkBandwidth = nvlinkBandwidth
+	return b
+}
+
+func (b R9NanoPlatformBuilder) WithFaultServiceTime(t sim.VTimeInSec) R9NanoPlatformBuilder {
+	b.faultServiceTime = t
+	return b
+}
+
+func (b R9NanoPlatformBuilder) WithPagePolicy(
+	p string,
+	accessCounterThreshold uint64,
+) R9NanoPlatformBuilder {
+	b.pagePolicy = p
+	b.accessCounterThreshold = accessCounterThreshold
+	return b
+}
+
 // WithMonitor sets the monitor that is used to monitor the simulation
 func (b R9NanoPlatformBuilder) WithMonitor(
 	m *monitoring.Monitor,
@@ -147,10 +209,11 @@ func (b R9NanoPlatformBuilder) Build() *Platform {
 	mmuComponent, pageTable := b.createMMU(b.engine)
 
 	gpuDriver := b.buildGPUDriver(pageTable)
+	gpuDriver.InvalidateAllGPUs = b.pagePolicy == "accesscounter"
+	gpuDriver.FaultServiceTime = b.faultServiceTime
 
-	gpuBuilder := b.createGPUBuilder(b.engine, gpuDriver, mmuComponent)
-	pcieConnector, rootComplexID :=
-		b.createConnection(b.engine, gpuDriver, mmuComponent)
+	gpuBuilder := b.createGPUBuilder(b.engine, gpuDriver, mmuComponent, pageTable)
+	network := b.createConnection(b.engine, gpuDriver, mmuComponent)
 
 	mmuComponent.MigrationServiceProvider = gpuDriver.GetPortByName("MMU")
 
@@ -158,11 +221,11 @@ func (b R9NanoPlatformBuilder) Build() *Platform {
 	pmcAddressTable := b.createPMCPageTable()
 
 	b.createGPUs(
-		rootComplexID, pcieConnector,
+		network,
 		gpuBuilder, gpuDriver,
 		rdmaAddressTable, pmcAddressTable)
 
-	pcieConnector.EstablishRoute()
+	network.establishRoute()
 
 	return &Platform{
 		Engine: b.engine,
@@ -251,22 +314,21 @@ func (b *R9NanoPlatformBuilder) setupPerformanceAnalyzer() {
 }
 
 func (b *R9NanoPlatformBuilder) createGPUs(
-	rootComplexID int,
-	pcieConnector *pcie.Connector,
+	network gpuNetwork,
 	gpuBuilder R9NanoGPUBuilder,
 	gpuDriver *driver.Driver,
 	rdmaAddressTable *mem.BankedLowModuleFinder,
 	pmcAddressTable *mem.BankedLowModuleFinder,
 ) {
-	lastSwitchID := rootComplexID
+	lastSwitchID := 0
 	for i := 1; i < b.numGPU+1; i++ {
 		if i%2 == 1 {
-			lastSwitchID = pcieConnector.AddSwitch(rootComplexID)
+			lastSwitchID = network.addGPUSwitch()
 		}
 
 		b.createGPU(i, gpuBuilder, gpuDriver,
 			rdmaAddressTable, pmcAddressTable,
-			pcieConnector, lastSwitchID)
+			network, lastSwitchID)
 	}
 }
 
@@ -288,7 +350,30 @@ func (b R9NanoPlatformBuilder) createConnection(
 	engine sim.Engine,
 	gpuDriver *driver.Driver,
 	mmuComponent *mmu.MMU,
-) (*pcie.Connector, int) {
+) gpuNetwork {
+	cpuPorts := []sim.Port{
+		gpuDriver.GetPortByName("GPU"),
+		gpuDriver.GetPortByName("MMU"),
+		mmuComponent.GetPortByName("Migration"),
+		mmuComponent.GetPortByName("Top"),
+	}
+
+	if b.gpuLink == "nvlink" {
+		c := nvlink.NewConnector().
+			WithEngine(engine).
+			WithPCIeVersion(4, 16).
+			WithPCIeSwitchLatency(140).
+			WithNVLinkBandwidth(b.nvlinkBandwidth)
+		c.CreateNetwork("Network")
+		root := c.AddRootComplex(cpuPorts)
+
+		return &nvlinkNetwork{c: c, root: root, numLinks: b.nvlinkLinks}
+	}
+
+	if b.gpuLink != "pcie" {
+		panic("unknown gpu link " + b.gpuLink)
+	}
+
 	//connection := sim.NewDirectConnection(engine)
 	// connection := noc.NewFixedBandwidthConnection(32, engine, 1*sim.GHz)
 	// connection.SrcBufferCapacity = 40960000
@@ -302,14 +387,24 @@ func (b R9NanoPlatformBuilder) createConnection(
 	}
 
 	pcieConnector.CreateNetwork("PCIe")
-	rootComplexID := pcieConnector.AddRootComplex(
-		[]sim.Port{
-			gpuDriver.GetPortByName("GPU"),
-			gpuDriver.GetPortByName("MMU"),
-			mmuComponent.GetPortByName("Migration"),
-			mmuComponent.GetPortByName("Top"),
-		})
-	return pcieConnector, rootComplexID
+	rootComplexID := pcieConnector.AddRootComplex(cpuPorts)
+
+	return &pcieNetwork{c: pcieConnector, root: rootComplexID}
+}
+
+func (b R9NanoPlatformBuilder) migrationPolicy() mmu.MigrationPolicy {
+	switch b.pagePolicy {
+	case "ontouch":
+		return mmu.OnTouch
+	case "accesscounter":
+		return mmu.AccessCounter
+	case "none":
+		return mmu.NoMigration
+	case "firsttouch":
+		return mmu.FirstTouch
+	}
+
+	panic("unknown page policy " + b.pagePolicy)
 }
 
 func (b R9NanoPlatformBuilder) createEngine() sim.Engine {
@@ -334,7 +429,8 @@ func (b R9NanoPlatformBuilder) createMMU(
 		WithFreq(1 * sim.GHz).
 		WithPageWalkingLatency(100).
 		WithLog2PageSize(b.log2PageSize).
-		WithPageTable(pageTable)
+		WithPageTable(pageTable).
+		WithMigrationPolicy(b.migrationPolicy())
 
 	mmuComponent := mmuBuilder.Build("MMU")
 
@@ -349,6 +445,7 @@ func (b *R9NanoPlatformBuilder) createGPUBuilder(
 	engine sim.Engine,
 	gpuDriver *driver.Driver,
 	mmuComponent *mmu.MMU,
+	pageTable vm.PageTable,
 ) R9NanoGPUBuilder {
 	gpuBuilder := MakeR9NanoGPUBuilder().
 		WithEngine(engine).
@@ -358,7 +455,15 @@ func (b *R9NanoPlatformBuilder) createGPUBuilder(
 		WithNumMemoryBank(16).
 		WithLog2MemoryBankInterleavingSize(7).
 		WithLog2PageSize(b.log2PageSize).
-		WithGlobalStorage(b.globalStorage)
+		WithGlobalStorage(b.globalStorage).
+		WithPageTable(pageTable).
+		WithGMMU(b.gmmuWalkers, b.gmmuLatency, b.gmmuPWCSize).
+		WithTLBLatency(b.l1TLBLatency, b.l2TLBLatency)
+
+	if b.pagePolicy == "accesscounter" {
+		gpuBuilder = gpuBuilder.
+			WithAccessCounterThreshold(b.accessCounterThreshold)
+	}
 
 	if b.monitor != nil {
 		gpuBuilder = gpuBuilder.WithMonitor(b.monitor)
@@ -412,8 +517,8 @@ func (b *R9NanoPlatformBuilder) createGPU(
 	gpuDriver *driver.Driver,
 	rdmaAddressTable *mem.BankedLowModuleFinder,
 	pmcAddressTable *mem.BankedLowModuleFinder,
-	pcieConnector *pcie.Connector,
-	pcieSwitchID int,
+	network gpuNetwork,
+	switchID int,
 ) *GPU {
 	name := fmt.Sprintf("GPU[%d]", index)
 	memAddrOffset := uint64(index) * 4 * mem.GB
@@ -431,8 +536,10 @@ func (b *R9NanoPlatformBuilder) createGPU(
 
 	b.configRDMAEngine(gpu, rdmaAddressTable)
 	b.configPMC(gpu, gpuDriver, pmcAddressTable)
+	gpuDriver.GMMUPorts = append(gpuDriver.GMMUPorts,
+		gpu.GMMU.GetPortByName("Bottom"))
 
-	pcieConnector.PlugInDevice(pcieSwitchID, gpu.Domain.Ports())
+	network.plugInGPU(switchID, gpu.Domain.Ports())
 
 	b.gpus = append(b.gpus, gpu)
 

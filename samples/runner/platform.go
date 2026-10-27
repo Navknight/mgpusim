@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"github.com/sarchlab/akita/v3/mem/vm/gmmu"
 	"github.com/sarchlab/akita/v3/sim"
 	"github.com/sarchlab/akita/v3/tracing"
 	"github.com/sarchlab/mgpusim/v3/driver"
@@ -28,6 +29,7 @@ type GPU struct {
 	CommandProcessor *cp.CommandProcessor
 	RDMAEngine       *rdma.Comp
 	PMC              *pagemigrationcontroller.PageMigrationController
+	GMMU             *gmmu.Comp
 	CUs              []TraceableComponent
 	SIMDs            []TraceableComponent
 	L1VCaches        []TraceableComponent

@@ -11,7 +11,9 @@ import (
 	"github.com/sarchlab/akita/v3/mem/cache/writethrough"
 	"github.com/sarchlab/akita/v3/mem/dram"
 	"github.com/sarchlab/akita/v3/mem/mem"
+	"github.com/sarchlab/akita/v3/mem/vm"
 	"github.com/sarchlab/akita/v3/mem/vm/addresstranslator"
+	"github.com/sarchlab/akita/v3/mem/vm/gmmu"
 	"github.com/sarchlab/akita/v3/mem/vm/mmu"
 	"github.com/sarchlab/akita/v3/mem/vm/tlb"
 	"github.com/sarchlab/akita/v3/monitoring"
@@ -46,25 +48,37 @@ type R9NanoGPUBuilder struct {
 	monitor            *monitoring.Monitor
 	perfAnalyzer       *analysis.PerfAnalyzer
 
-	gpuName                 string
-	gpu                     *GPU
-	gpuID                   uint64
-	cp                      *cp.CommandProcessor
-	cus                     []*cu.ComputeUnit
-	l1vReorderBuffers       []*rob2.ReorderBuffer
-	l1iReorderBuffers       []*rob2.ReorderBuffer
-	l1sReorderBuffers       []*rob2.ReorderBuffer
-	l1vCaches               []*writearound.Cache
-	l1sCaches               []*writethrough.Cache
-	l1iCaches               []*writethrough.Cache
-	l2Caches                []*writeback.Cache
-	l1vAddrTrans            []*addresstranslator.AddressTranslator
-	l1sAddrTrans            []*addresstranslator.AddressTranslator
-	l1iAddrTrans            []*addresstranslator.AddressTranslator
-	l1vTLBs                 []*tlb.TLB
-	l1sTLBs                 []*tlb.TLB
-	l1iTLBs                 []*tlb.TLB
-	l2TLBs                  []*tlb.TLB
+	gpuName           string
+	gpu               *GPU
+	gpuID             uint64
+	cp                *cp.CommandProcessor
+	cus               []*cu.ComputeUnit
+	l1vReorderBuffers []*rob2.ReorderBuffer
+	l1iReorderBuffers []*rob2.ReorderBuffer
+	l1sReorderBuffers []*rob2.ReorderBuffer
+	l1vCaches         []*writearound.Cache
+	l1sCaches         []*writethrough.Cache
+	l1iCaches         []*writethrough.Cache
+	l2Caches          []*writeback.Cache
+	l1vAddrTrans      []*addresstranslator.AddressTranslator
+	l1sAddrTrans      []*addresstranslator.AddressTranslator
+	l1iAddrTrans      []*addresstranslator.AddressTranslator
+	l1vTLBs           []*tlb.TLB
+	l1sTLBs           []*tlb.TLB
+	l1iTLBs           []*tlb.TLB
+	l2TLBs            []*tlb.TLB
+
+	pageTable   vm.PageTable
+	gmmu        *gmmu.Comp
+	gmmuWalkers int
+	gmmuLatency int
+	gmmuPWCSize int
+
+	accessCounterThreshold uint64
+
+	l1TLBLatency int
+	l2TLBLatency int
+
 	drams                   []*dram.MemController
 	lowModuleFinderForL1    *mem.InterleavedLowModuleFinder
 	lowModuleFinderForL2    *mem.InterleavedLowModuleFinder
@@ -90,8 +104,13 @@ func MakeR9NanoGPUBuilder() R9NanoGPUBuilder {
 		log2CacheLineSize:              6,
 		log2PageSize:                   12,
 		log2MemoryBankInterleavingSize: 12,
-		l2CacheSize:                    2 * mem.MB,
+		l2CacheSize:                    256 * mem.KB,
 		dramSize:                       4 * mem.GB,
+		gmmuWalkers:                    8,
+		gmmuLatency:                    100,
+		gmmuPWCSize:                    128,
+		l1TLBLatency:                   1,
+		l2TLBLatency:                   10,
 	}
 	return b
 }
@@ -120,6 +139,11 @@ func (b R9NanoGPUBuilder) WithMemAddrOffset(
 // for the GPU.
 func (b R9NanoGPUBuilder) WithMMU(mmu *mmu.MMU) R9NanoGPUBuilder {
 	b.mmu = mmu
+	return b
+}
+
+func (b R9NanoGPUBuilder) WithPageTable(pageTable vm.PageTable) R9NanoGPUBuilder {
+	b.pageTable = pageTable
 	return b
 }
 
@@ -183,6 +207,24 @@ func (b R9NanoGPUBuilder) WithLog2CacheLineSize(
 	return b
 }
 
+func (b R9NanoGPUBuilder) WithGMMU(walkers, latency, pwcSize int) R9NanoGPUBuilder {
+	b.gmmuWalkers = walkers
+	b.gmmuLatency = latency
+	b.gmmuPWCSize = pwcSize
+	return b
+}
+
+func (b R9NanoGPUBuilder) WithTLBLatency(l1, l2 int) R9NanoGPUBuilder {
+	b.l1TLBLatency = l1
+	b.l2TLBLatency = l2
+	return b
+}
+
+func (b R9NanoGPUBuilder) WithAccessCounterThreshold(n uint64) R9NanoGPUBuilder {
+	b.accessCounterThreshold = n
+	return b
+}
+
 // WithLog2PageSize sets the page size with the power of 2.
 func (b R9NanoGPUBuilder) WithLog2PageSize(log2PageSize uint64) R9NanoGPUBuilder {
 	b.log2PageSize = log2PageSize
@@ -232,12 +274,15 @@ func (b R9NanoGPUBuilder) Build(name string, id uint64) *GPU {
 	b.buildL2Caches()
 	b.buildDRAMControllers()
 	b.buildCP()
+	b.buildGMMU()
 	b.buildL2TLB()
+	b.buildAccessCounter()
 
 	b.connectCP()
 	b.connectL2AndDRAM()
 	b.connectL1ToL2()
 	b.connectL1TLBToL2TLB()
+	b.connectL2TLBToGMMU()
 
 	b.populateExternalPorts()
 
@@ -250,10 +295,7 @@ func (b *R9NanoGPUBuilder) populateExternalPorts() {
 	b.gpu.Domain.AddPort("PageMigrationController",
 		b.pageMigrationController.GetPortByName("Remote"))
 
-	for i, l2TLB := range b.l2TLBs {
-		name := fmt.Sprintf("Translation_%02d", i)
-		b.gpu.Domain.AddPort(name, l2TLB.GetPortByName("Bottom"))
-	}
+	b.gpu.Domain.AddPort("Translation", b.gmmu.GetPortByName("Bottom"))
 }
 
 func (b *R9NanoGPUBuilder) createGPU(name string, id uint64) {
@@ -314,8 +356,14 @@ func (b *R9NanoGPUBuilder) connectL1ToL2() {
 		l1ToL2Conn.PlugIn(l2.GetPortByName("Top"), 64)
 	}
 
+	localLow, localHigh := b.memAddrOffset, b.memAddrOffset+4*mem.GB
+	isRemote := func(addr uint64) bool {
+		return addr < localLow || addr >= localHigh
+	}
+
 	for _, l1v := range b.l1vCaches {
 		l1v.SetLowModuleFinder(lowModuleFinder)
+		l1v.SetUncacheable(isRemote)
 		l1ToL2Conn.PlugIn(l1v.GetPortByName("Bottom"), 16)
 	}
 
@@ -356,6 +404,12 @@ func (b *R9NanoGPUBuilder) connectL2AndDRAM() {
 	b.pageMigrationController.MemCtrlFinder = lowModuleFinder
 	b.l2ToDramConnection.PlugIn(
 		b.pageMigrationController.GetPortByName("LocalMem"), 16)
+}
+
+func (b *R9NanoGPUBuilder) connectL2TLBToGMMU() {
+	tlbGmmu := sim.NewDirectConnection(b.gpuName+".L2TLBToGMMU", b.engine, b.freq)
+	tlbGmmu.PlugIn(b.l2TLBs[0].GetPortByName("Bottom"), 64)
+	tlbGmmu.PlugIn(b.gmmu.GetPortByName("Top"), 64)
 }
 
 func (b *R9NanoGPUBuilder) connectL1TLBToL2TLB() {
@@ -488,6 +542,7 @@ func (b *R9NanoGPUBuilder) buildSAs() {
 		withGPUID(b.gpuID).
 		withLog2CachelineSize(b.log2CacheLineSize).
 		withLog2PageSize(b.log2PageSize).
+		withL1TLBLatency(b.l1TLBLatency).
 		withNumCU(b.numCUPerShaderArray)
 
 	if b.enableISADebugging {
@@ -815,16 +870,17 @@ func (b *R9NanoGPUBuilder) buildCP() {
 }
 
 func (b *R9NanoGPUBuilder) buildL2TLB() {
-	numWays := 64
+	numWays := 16
 	builder := tlb.MakeBuilder().
 		WithEngine(b.engine).
 		WithFreq(b.freq).
 		WithNumWays(numWays).
-		WithNumSets(int(b.dramSize / (1 << b.log2PageSize) / uint64(numWays))).
+		WithNumSets(32).
 		WithNumMSHREntry(64).
 		WithNumReqPerCycle(1024).
 		WithPageSize(1 << b.log2PageSize).
-		WithLowModule(b.mmu.GetPortByName("Top"))
+		WithLatency(b.l2TLBLatency).
+		WithLowModule(b.gmmu.GetPortByName("Top"))
 
 	l2TLB := builder.Build(fmt.Sprintf("%s.L2TLB", b.gpuName))
 	b.l2TLBs = append(b.l2TLBs, l2TLB)
@@ -837,6 +893,37 @@ func (b *R9NanoGPUBuilder) buildL2TLB() {
 	if b.monitor != nil {
 		b.monitor.RegisterComponent(l2TLB)
 	}
+}
+
+func (b *R9NanoGPUBuilder) buildGMMU() {
+	b.gmmu = gmmu.MakeBuilder().
+		WithEngine(b.engine).
+		WithFreq(b.freq).
+		WithDeviceID(b.gpuID).
+		WithLog2PageSize(b.log2PageSize).
+		WithPageTable(b.pageTable).
+		WithMaxNumReqInFlight(b.gmmuWalkers).
+		WithPageWalkingLatency(b.gmmuLatency).
+		WithPWCSize(b.gmmuPWCSize).
+		WithWalkQueueSize(64).
+		WithLowModule(b.mmu.GetPortByName("Top")).Build(b.gpuName + ".GMMU")
+
+	b.gpu.GMMU = b.gmmu
+}
+
+func (b *R9NanoGPUBuilder) buildAccessCounter() {
+	if b.accessCounterThreshold == 0 {
+		return
+	}
+
+	c := vm.NewAccessCounter(b.accessCounterThreshold, 16)
+	for _, at := range b.l1vAddrTrans {
+		at.SetAccessCounter(c)
+	}
+	for _, at := range b.l1sAddrTrans {
+		at.SetAccessCounter(c)
+	}
+	b.gmmu.SetAccessCounter(c)
 }
 
 func (b *R9NanoGPUBuilder) numCU() int {

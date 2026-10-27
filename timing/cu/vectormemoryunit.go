@@ -191,6 +191,8 @@ func (u *VectorMemoryUnit) executeFlatLoad(
 	return true
 }
 
+var DisableWriteCoalesceWait bool
+
 func (u *VectorMemoryUnit) executeFlatStore(
 	now sim.VTimeInSec,
 	wave *wavefront.Wavefront,
@@ -218,7 +220,7 @@ func (u *VectorMemoryUnit) executeFlatStore(
 
 	for i, t := range transactions {
 		u.cu.InFlightVectorMemAccess = append(u.cu.InFlightVectorMemAccess, t)
-		if i != len(transactions)-1 {
+		if i != len(transactions)-1 && !DisableWriteCoalesceWait {
 			t.Write.CanWaitForCoalesce = true
 		}
 		lowModule := u.cu.VectorMemModules.Find(t.Write.Address)
