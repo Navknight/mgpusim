@@ -349,7 +349,7 @@ func (p *CommandProcessor) processShootdownCommand(
 	now sim.VTimeInSec,
 	cmd *protocol.ShootDownCommand,
 ) bool {
-	if p.shootDownInProcess == true {
+	if p.shootDownInProcess || p.currFlushRequest != nil {
 		return false
 	}
 
@@ -719,7 +719,7 @@ func (p *CommandProcessor) processFlushReq(
 	now sim.VTimeInSec,
 	req *protocol.FlushReq,
 ) bool {
-	if p.numCacheACK > 0 {
+	if p.numCacheACK > 0 || p.shootDownInProcess {
 		return false
 	}
 
@@ -748,6 +748,7 @@ func (p *CommandProcessor) processFlushReq(
 			WithOriginalReq(req).
 			Build()
 		p.toDriverSender.Send(rsp)
+		p.currFlushRequest = nil
 	}
 
 	p.ToDriver.Retrieve(now)
